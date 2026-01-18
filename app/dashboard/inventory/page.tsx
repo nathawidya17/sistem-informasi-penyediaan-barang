@@ -18,26 +18,30 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link"; 
 import { Plus, PackageCheck, Archive } from "lucide-react";
 
-// Definisi Tipe Data agar TypeScript mengenali nama variabel baru
+// Definisi Tipe Data
 type MaterialData = {
   id: string;
   name: string;
   unit: string;
   pricePerUnit: number;
   stock: number;
-  // Variabel baru sesuai Schema & Seed terakhir
   eoqBiayaPesan: number;
   eoqBiayaSimpan: number;
 };
 
 export default async function InventoryPage() {
-  // Casting tipe data agar variable baru terbaca
+  // Casting tipe data
   const materials = await getMaterials() as unknown as MaterialData[];
 
   // Hitung ringkasan
   const totalItem = materials.length;
-  // Hitung Estimasi Aset (Stok * Harga)
-  const totalAset = materials.reduce((acc, item) => acc + (item.stock * item.pricePerUnit), 0);
+  
+  // Hitung Estimasi Aset (Stok * Harga) -> Ditambah safety check (|| 0)
+  const totalAset = materials.reduce((acc, item) => {
+    const stock = item.stock || 0;
+    const price = item.pricePerUnit || 0;
+    return acc + (stock * price);
+  }, 0);
 
   return (
     <div className="space-y-6">
@@ -51,7 +55,6 @@ export default async function InventoryPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* Tombol dimatikan dulu jika belum ada fiturnya, atau arahkan ke halaman yg sesuai */}
           <Button asChild className="bg-blue-600 hover:bg-blue-700">
             <Link href="/dashboard/eoq">
               <PackageCheck className="mr-2 h-4 w-4" /> Cek Analisa EOQ
@@ -118,32 +121,32 @@ export default async function InventoryPage() {
                     </div>
                   </TableCell>
                   
-                  {/* Harga Satuan */}
+                  {/* Harga Satuan - FIX: Ditambah ( || 0 ) */}
                   <TableCell>
-                    Rp {item.pricePerUnit.toLocaleString("id-ID")}
+                    Rp {(item.pricePerUnit || 0).toLocaleString("id-ID")}
                     <span className="text-xs text-slate-400"> / {item.unit}</span>
                   </TableCell>
                   
-                  {/* Biaya Pesan (S) - Sesuai Schema Baru */}
+                  {/* Biaya Pesan (S) - FIX: Ditambah ( || 0 ) */}
                   <TableCell>
                     {item.eoqBiayaPesan > 0
-                      ? `Rp ${item.eoqBiayaPesan.toLocaleString("id-ID", { maximumFractionDigits: 0 })}` 
+                      ? `Rp ${(item.eoqBiayaPesan || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}` 
                       : <span className="text-slate-300">-</span>}
                   </TableCell>
                   
-                  {/* Biaya Simpan (H) - Sesuai Schema Baru */}
+                  {/* Biaya Simpan (H) - FIX: Ditambah ( || 0 ) */}
                   <TableCell>
                     {item.eoqBiayaSimpan > 0
                       ? <span className="text-blue-700 font-medium bg-blue-50 px-2 py-1 rounded-md text-xs">
-                          Rp {item.eoqBiayaSimpan.toLocaleString("id-ID", { maximumFractionDigits: 2 })}
+                          Rp ${(item.eoqBiayaSimpan || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
                         </span>
                       : <span className="text-slate-300">-</span>}
                   </TableCell>
                   
-                  {/* Stok Aktual */}
+                  {/* Stok Aktual - FIX: Ditambah ( || 0 ) */}
                   <TableCell className="text-right">
                     <span className="text-lg font-bold text-slate-800">
-                      {item.stock.toLocaleString("id-ID")}
+                      {(item.stock || 0).toLocaleString("id-ID")}
                     </span> 
                     <span className="text-sm text-slate-500 ml-1">{item.unit}</span>
                   </TableCell>

@@ -22,7 +22,7 @@ export default function EOQCalculator() {
   
   // State Khusus Excel
   const [freqAktual, setFreqAktual] = useState<any>("") 
-  const [totalSimpanAktual, setTotalSimpanAktual] = useState<any>("") // Input 324 Juta
+  const [totalSimpanAktual, setTotalSimpanAktual] = useState<any>("") 
 
   const [result, setResult] = useState<any>(null)
 
@@ -44,15 +44,12 @@ export default function EOQCalculator() {
 
     if (item) {
       setNamaBarang(item.name)
-      // Isi Parameter Rumus (S & H)
+      // Isi Parameter Rumus
       setBiayaPesan(item.eoqBiayaPesan || 0)
       setBiayaSimpan(item.eoqBiayaSimpan || 0)
-      // Isi Data Aktual (324 Juta masuk sini)
+      // Isi Data Aktual 
       setFreqAktual(item.exFreq || 0) 
       setTotalSimpanAktual(item.exHoldCost || 0) 
-      
-      // Estimasi Demand (Bisa diedit user)
-      // Jika Qty 0, biarkan kosong biar user isi manual 982225
       setDemand("") 
     } else {
       setNamaBarang(""); setBiayaPesan(""); setBiayaSimpan("");
@@ -72,18 +69,25 @@ export default function EOQCalculator() {
       return
     }
 
-    // --- 1. HITUNG AKTUAL (TABEL MERAH) ---
-    const Q_act = F_act > 0 ? D / F_act : 0
-    const OrderCost_act = F_act * S // 72 * 140jt = 10 Milyar (Sesuai Excel)
+    // ====================================================
+    // 1. HITUNG AKTUAL (TABEL MERAH)
+    // ====================================================
     
-    // LOGIKA KUNCI: Pake input "324 Juta" kalo ada.
+    // REVISI DISINI: Qty Actual = Demand (JANGAN DIBAGI FREKUENSI)
+    const Q_act = D 
+
+    const OrderCost_act = F_act * S 
+    
+    // Biaya Simpan: Pakai input manual (324 Juta), kalau kosong baru hitung rumus
     const HoldCost_act = !isNaN(HoldCost_Actual_Input) && HoldCost_Actual_Input > 0 
       ? HoldCost_Actual_Input 
-      : (Q_act / 2) * H
+      : (D / F_act / 2) * H // Fallback rumus kalau input kosong
 
     const Total_act = OrderCost_act + HoldCost_act
 
-    // --- 2. HITUNG EOQ (TABEL HIJAU) ---
+    // ====================================================
+    // 2. HITUNG EOQ (TABEL HIJAU)
+    // ====================================================
     let Q_eoq = 0
     if (H > 0) Q_eoq = Math.sqrt((2 * D * S) / H)
     
@@ -114,7 +118,7 @@ export default function EOQCalculator() {
             <Calculator className="w-5 h-5"/> Input Data Simulasi
           </CardTitle>
           <CardDescription>
-            Pilih bahan baku untuk mengisi data otomatis.
+            Pilih bahan baku untuk mengisi data otomatis sesuai Database Excel.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -174,31 +178,43 @@ export default function EOQCalculator() {
                 </TableRow>
               </TableHeader>
               <TableBody>
+                
+                {/* 1. JUMLAH PEMESANAN (Sekarang Qty Aktual = Demand) */}
                 <TableRow>
                   <TableCell className="pl-6 font-medium">Jumlah Pemesanan (Kg)</TableCell>
                   <TableCell className="text-center font-mono">{result.actual.Q.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
                   <TableCell className="text-center font-mono font-bold text-emerald-700">{result.eoq.Q.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
                 </TableRow>
+
+                {/* 2. BIAYA PEMESANAN */}
+                <TableRow>
+                  <TableCell className="pl-6 font-medium">Biaya Pemesanan (Rp)</TableCell>
+                  <TableCell className="text-center font-mono">Rp {result.actual.orderCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
+                  <TableCell className="text-center font-mono text-emerald-700">Rp {result.eoq.orderCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
+                </TableRow>
+
+                {/* 3. BIAYA PENYIMPANAN */}
+                <TableRow>
+                  <TableCell className="pl-6 font-medium">Biaya Penyimpanan (Rp)</TableCell>
+                  <TableCell className="text-center font-mono font-bold text-red-600 bg-red-50">Rp {result.actual.holdCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
+                  <TableCell className="text-center font-mono text-emerald-700">Rp {result.eoq.holdCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
+                </TableRow>
+
+                {/* 4. FREKUENSI */}
                 <TableRow>
                   <TableCell className="pl-6 font-medium">Frekuensi Pembelian</TableCell>
                   <TableCell className="text-center font-bold">{result.actual.freq}</TableCell>
                   <TableCell className="text-center font-bold text-emerald-700">{result.eoq.freq.toFixed(2)}</TableCell>
                 </TableRow>
-                <TableRow>
-                  <TableCell className="pl-6 font-medium">Biaya Pemesanan</TableCell>
-                  <TableCell className="text-center font-mono">Rp {result.actual.orderCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
-                  <TableCell className="text-center font-mono text-emerald-700">Rp {result.eoq.orderCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="pl-6 font-medium">Biaya Penyimpanan</TableCell>
-                  <TableCell className="text-center font-mono  ">Rp {result.actual.holdCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
-                  <TableCell className="text-center font-mono text-emerald-700">Rp {result.eoq.holdCost.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
-                </TableRow>
+
+                {/* 5. TOTAL */}
                 <TableRow className="bg-slate-50 border-t-2">
                   <TableCell className="pl-6 font-bold">Total Biaya Persediaan</TableCell>
                   <TableCell className="text-center font-bold text-lg">Rp {result.actual.total.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
                   <TableCell className="text-center font-bold text-lg text-emerald-700">Rp {result.eoq.total.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
                 </TableRow>
+                
+                {/* 6. PENGHEMATAN */}
                 <TableRow className="bg-blue-600 text-white">
                    <TableCell className="pl-6 font-bold py-4">PENGHEMATAN</TableCell>
                    <TableCell colSpan={2} className="text-center font-bold text-2xl py-4 text-yellow-300 font-mono">Rp {result.savings.toLocaleString('id-ID', {maximumFractionDigits:0})}</TableCell>
