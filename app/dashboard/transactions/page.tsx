@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 export default async function TransactionPage() {
   const materials = await getMaterials();
@@ -24,6 +26,13 @@ export default async function TransactionPage() {
 
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-6">
+      {/* Tombol Kembali */}
+      <Button asChild variant="outline" size="sm">
+        <Link href="/dashboard/inventory">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+        </Link>
+      </Button>
+
       <h2 className="text-3xl font-bold tracking-tight">Catat Transaksi Gudang</h2>
 
       <Card>

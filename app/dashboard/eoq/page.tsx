@@ -1,21 +1,20 @@
-import { getMaterials } from "@/app/actions/getMaterials";
-import EOQForm from "@/app/dashboard/eoq/EOQForm";
+import EOQCalculator from "@/components/EOQCalculator"
 
-export default async function EOQPage() {
-  // Ambil data bahan baku dari database
-  const materials = await getMaterials();
-
+export default function EOQPage() {
   return (
-    <div className="p-8 space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Kalkulator EOQ</h2>
-        <p className="text-muted-foreground">
-          Hitung Economic Order Quantity untuk menentukan jumlah pemesanan optimal.
-        </p>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Kalkulator EOQ</h2>
+          <p className="text-muted-foreground">
+            Sistem Perhitungan Pengoptimalan Persediaan Bahan Baku
+          </p>
+        </div>
       </div>
       
-      {/* Panggil Client Component yang berisi rumus */}
-      <EOQForm materials={materials} />
+      {/* Panggil Calculator Disini */}
+      <EOQCalculator />
+      
     </div>
-  );
+  )
 }

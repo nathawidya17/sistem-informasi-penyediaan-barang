@@ -3,11 +3,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PackagePlus, Save } from "lucide-react"
+import { PackagePlus, Save, ArrowLeft } from "lucide-react"
+import Link from "next/link"
 
 export default function AddProductPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
+      {/* Tombol Kembali */}
+      <Button asChild variant="outline" size="sm">
+        <Link href="/dashboard/inventory">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+        </Link>
+      </Button>
+
       <div className="flex items-center gap-2 text-blue-600 mb-4">
         <PackagePlus className="h-6 w-6" />
         <h2 className="text-2xl font-bold">Tambah Produk Baru</h2>
