@@ -1,0 +1,90 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" 
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUDANG
+  PURCHASING
+  MANAJER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+}
+
+// prisma/schema.prisma
+
+model Material {
+  id           String   @id @default(uuid())
+  name         String
+  unit         String
+  pricePerUnit Float
+  stock        Float    @default(0)
+
+  holdingCost  Float?   // Biaya Simpan (desimal, cth: 0.07)
+  orderingCost Float?   // Biaya Pesan (Rupiah)
+
+  transactions Transaction[]
+  orderItems   OrderItem[]
+}
+
+// Model lain (User, Supplier, Transaction, dll) biarkan tetap ada
+
+model Supplier {
+  id      String   @id @default(uuid())
+  name    String   
+  address String?
+  phone   String?
+  orders  PurchaseOrder[]
+}
+
+model Transaction {
+  id          String      @id @default(uuid())
+  date        DateTime    @default(now())
+  type        TransType   
+  quantity    Float
+  materialId  String
+  material    Material    @relation(fields: [materialId], references: [id])
+}
+
+enum TransType {
+  IN
+  OUT
+}
+
+model PurchaseOrder {
+  id          String    @id @default(uuid())
+  code        String    @unique 
+  date        DateTime  @default(now())
+  status      PoStatus  @default(PENDING) 
+  supplierId  String
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  items       OrderItem[]
+}
+
+enum PoStatus {
+  PENDING   
+  APPROVED  
+  REJECTED  
+  COMPLETED 
+}
+
+model OrderItem {
+  id        String        @id @default(uuid())
+  poId      String
+  po        PurchaseOrder @relation(fields: [poId], references: [id])
+  materialId String
+  material  Material      @relation(fields: [materialId], references: [id])
+  quantity  Float         
+}
