@@ -1,68 +1,68 @@
-// prisma/seed.ts
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🔄 Memulai Seeding Data Presisi...')
+  console.log('🔄 Seeding Data Excel Presisi...')
 
-  // 1. KOSONGKAN DATABASE LAMA
   try {
     await prisma.transaction.deleteMany()
     await prisma.material.deleteMany()
     await prisma.supplier.deleteMany()
-  } catch (e) {
-    console.log('Database sudah bersih.')
-  }
+  } catch (e) {}
 
-  // 2. ISI DATA MATERIAL (DENGAN NILAI S & H YANG BENAR)
-  
-  // --- Terigu Golden Crown ---
-  // S = 140 Juta, H = 447 Perak
+  await prisma.supplier.create({ data: { name: 'PT. Bungasari Flour Mills' } })
+  await prisma.supplier.create({ data: { name: 'PT. Sentra Usahatama Jaya' } })
+
+  // 1. TERIGU GOLDEN CROWN
   await prisma.material.create({
     data: {
       name: 'Terigu Golden Crown',
       unit: 'Kg',
       pricePerUnit: 10320,
       stock: 5000,
-      eoqBiayaPesan: 140785583, // <--- INI S (Tidak Boleh 0)
-      eoqBiayaSimpan: 447.47,   // <--- INI H (Tidak Boleh 0)
+      
+      // Parameter Rumus
+      eoqBiayaPesan: 140785583, // S (Benar)
+      eoqBiayaSimpan: 447.47,   // H (Benar)
+      
+      // Data Aktual (Penyimpanan Tetap)
+      existingHoldCost: 324000000, // <--- INI ANGKA 324 Juta YANG ANDA CARI
+      existingFreq: 72,
     }
   })
 
-  // --- Gula Rafinasi Grade B ---
-  // S = 120 Juta, H = 595 Perak
+  // 2. GULA RAFINASI
   await prisma.material.create({
     data: {
       name: 'Gula Rafinasi Grade B',
       unit: 'Kg',
       pricePerUnit: 7200,
       stock: 2000,
-      eoqBiayaPesan: 120030000, // <--- INI S
-      eoqBiayaSimpan: 595.86,   // <--- INI H
+      eoqBiayaPesan: 120030000,
+      eoqBiayaSimpan: 595.86,
+      existingHoldCost: 216000000, // 216 Juta
+      existingFreq: 30,
     }
   })
 
-  // --- NZMP Whole Milk Powder ---
-  // S = 118 Juta, H = 8.966 Perak
+  // 3. SUSU
   await prisma.material.create({
     data: {
       name: 'NZMP Whole Milk Powder',
       unit: 'Kg',
       pricePerUnit: 66840,
       stock: 500,
-      eoqBiayaPesan: 118826667, // <--- INI S
-      eoqBiayaSimpan: 8966.38,  // <--- INI H
+      eoqBiayaPesan: 118826667,
+      eoqBiayaSimpan: 8966.38,
+      existingHoldCost: 180000000, // 180 Juta
+      existingFreq: 18,
     }
   })
 
-  console.log('✅ Seeding Selesai! Data S & H sudah masuk.')
+  console.log('✅ Seeding Selesai.')
 }
 
 main()
   .then(async () => { await prisma.$disconnect() })
-  .catch(async (e) => {
-    console.error(e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+  .catch(async (e) => { console.error(e); process.exit(1) })

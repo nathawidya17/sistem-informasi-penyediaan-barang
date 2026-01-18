@@ -17,18 +17,25 @@ model User {
   createdAt DateTime @default(now())
 }
 
+// === MODEL MATERIAL YANG DIPERBARUI ===
 model Material {
-  id           String   @id @default(uuid())
-  name         String
-  unit         String
-  pricePerUnit Float    @default(0)
-  stock        Float    @default(0)
+  id             String   @id @default(uuid())
+  name           String
+  unit           String
+  pricePerUnit   Float    @default(0)
+  stock          Float    @default(0)
 
-  // --- PARAMETER EOQ (WAJIB ADA UNTUK KALKULATOR) ---
-  eoqBiayaPesan  Float @default(0) // S (Biaya Pesan per Order)
-  eoqBiayaSimpan Float @default(0) // H (Biaya Simpan per Unit)
+  // 1. Parameter Rumus EOQ
+  eoqBiayaPesan  Float    @default(0) // S
+  eoqBiayaSimpan Float    @default(0) // H
 
-  transactions Transaction[]
+  // 2. Data Aktual (Agar SAMA PERSIS dengan Excel)
+  // Kolom inilah yang tadi bikin error karena belum ada
+  existingHoldCost Float  @default(0) // Simpan angka 324 Juta disini
+  existingFreq     Float  @default(0) // Simpan angka 72 disini
+  existingQty      Float  @default(0) 
+
+  transactions   Transaction[]
 }
 
 model Supplier {
@@ -39,7 +46,7 @@ model Supplier {
 model Transaction {
   id         String    @id @default(uuid())
   date       DateTime  @default(now())
-  type       String    // IN atau OUT
+  type       String    
   quantity   Float
   materialId String
   material   Material  @relation(fields: [materialId], references: [id])
