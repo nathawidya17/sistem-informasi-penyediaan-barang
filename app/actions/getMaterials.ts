@@ -13,7 +13,7 @@ export async function getMaterials() {
   const formattedData = materials.map((m) => ({
     id: m.id,
     name: m.name,
-    unit: m.unit,
+    unit: m.satuan,
     stock: m.stock || 0,
     pricePerUnit: m.pricePerUnit || 0,
     
