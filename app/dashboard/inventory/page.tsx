@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button"; 
 import Link from "next/link"; 
 import { Plus, PackageCheck, Archive } from "lucide-react";
+import { InventoryTableRow } from "@/components/InventoryTableRow";
 
 // Definisi Tipe Data
 type MaterialData = {
@@ -53,13 +54,6 @@ export default async function InventoryPage() {
           <p className="text-muted-foreground">
             Monitoring stok fisik dan parameter biaya bahan baku.
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link href="/dashboard/eoq">
-              <PackageCheck className="mr-2 h-4 w-4" /> Cek Analisa EOQ
-            </Link>
-          </Button>
         </div>
       </div>
 
@@ -113,44 +107,10 @@ export default async function InventoryPage() {
             </TableHeader>
             <TableBody>
               {materials.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-800">{item.name}</span>
-                      <span className="text-[10px] text-slate-400 uppercase">ID: {item.id.substring(0,6)}</span>
-                    </div>
-                  </TableCell>
-                  
-                  {/* Harga Satuan - FIX: Ditambah ( || 0 ) */}
-                  <TableCell>
-                    Rp {(item.pricePerUnit || 0).toLocaleString("id-ID")}
-                    <span className="text-xs text-slate-400"> / {item.unit}</span>
-                  </TableCell>
-                  
-                  {/* Biaya Pesan (S) - FIX: Ditambah ( || 0 ) */}
-                  <TableCell>
-                    {item.eoqBiayaPesan > 0
-                      ? `Rp ${(item.eoqBiayaPesan || 0).toLocaleString("id-ID", { maximumFractionDigits: 0 })}` 
-                      : <span className="text-slate-300">-</span>}
-                  </TableCell>
-                  
-                  {/* Biaya Simpan (H) - FIX: Ditambah ( || 0 ) */}
-                  <TableCell>
-                    {item.eoqBiayaSimpan > 0
-                      ? <span className="text-blue-700 font-medium bg-blue-50 px-2 py-1 rounded-md text-xs">
-                          Rp ${(item.eoqBiayaSimpan || 0).toLocaleString("id-ID", { maximumFractionDigits: 2 })}
-                        </span>
-                      : <span className="text-slate-300">-</span>}
-                  </TableCell>
-                  
-                  {/* Stok Aktual - FIX: Ditambah ( || 0 ) */}
-                  <TableCell className="text-right">
-                    <span className="text-lg font-bold text-slate-800">
-                      {(item.stock || 0).toLocaleString("id-ID")}
-                    </span> 
-                    <span className="text-sm text-slate-500 ml-1">{item.unit}</span>
-                  </TableCell>
-                </TableRow>
+                <InventoryTableRow
+                  key={item.id}
+                  item={item}
+                />
               ))}
               
               {materials.length === 0 && (

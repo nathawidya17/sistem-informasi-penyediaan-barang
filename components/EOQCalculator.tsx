@@ -70,15 +70,13 @@ export default function EOQCalculator() {
     }
 
     // ====================================================
-    // 1. HITUNG AKTUAL (TABEL MERAH)
+    // 1. HITUNG AKTUAL 
     // ====================================================
     
-    // REVISI DISINI: Qty Actual = Demand (JANGAN DIBAGI FREKUENSI)
     const Q_act = D 
 
     const OrderCost_act = F_act * S 
     
-    // Biaya Simpan: Pakai input manual (324 Juta), kalau kosong baru hitung rumus
     const HoldCost_act = !isNaN(HoldCost_Actual_Input) && HoldCost_Actual_Input > 0 
       ? HoldCost_Actual_Input 
       : (D / F_act / 2) * H // Fallback rumus kalau input kosong
@@ -86,7 +84,7 @@ export default function EOQCalculator() {
     const Total_act = OrderCost_act + HoldCost_act
 
     // ====================================================
-    // 2. HITUNG EOQ (TABEL HIJAU)
+    // 2. HITUNG EOQ 
     // ====================================================
     let Q_eoq = 0
     if (H > 0) Q_eoq = Math.sqrt((2 * D * S) / H)

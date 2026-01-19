@@ -9,12 +9,7 @@ import Link from "next/link"
 export default function AddProductPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Tombol Kembali */}
-      <Button asChild variant="outline" size="sm">
-        <Link href="/dashboard/inventory">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-        </Link>
-      </Button>
+    
 
       <div className="flex items-center gap-2 text-blue-600 mb-4">
         <PackagePlus className="h-6 w-6" />

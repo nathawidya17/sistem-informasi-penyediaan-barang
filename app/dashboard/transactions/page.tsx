@@ -12,26 +12,19 @@ import { ArrowLeft } from "lucide-react";
 export default async function TransactionPage() {
   const materials = await getMaterials();
 
-  // Fungsi wrapper agar bisa dipanggil di form server component
   async function submitTransaction(formData: FormData) {
     'use server'
     try {
       await updateStock(formData)
-      redirect('/dashboard/inventory') // Kalau sukses, balik ke tabel stok
+      redirect('/dashboard/inventory')
     } catch (error) {
       console.error(error) 
-      // Di aplikasi real, kita bisa kirim error message ke UI
     }
   }
 
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-6">
-      {/* Tombol Kembali */}
-      <Button asChild variant="outline" size="sm">
-        <Link href="/dashboard/inventory">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-        </Link>
-      </Button>
+     
 
       <h2 className="text-3xl font-bold tracking-tight">Catat Transaksi Gudang</h2>
 

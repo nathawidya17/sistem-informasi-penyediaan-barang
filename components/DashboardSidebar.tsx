@@ -2,25 +2,31 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Package, Calculator, ArrowRightLeft, LayoutDashboard, LogOut } from "lucide-react" // Pastikan install lucide-react
+import { Package, Calculator, ArrowRightLeft, LayoutDashboard, LogOut, Layout as LayoutIcon } from "lucide-react" // Pastikan install lucide-react
 import { cn } from "@/lib/utils" // Utility bawaan installan shadcn
 
 const menuItems = [
   {
-    title: "Inventory Stok",
+    title: "Inventory Gudang",
     href: "/dashboard/inventory",
     icon: Package
   },
   {
-    title: "Rekomendasi EOQ",
+    title: "Analisa EOQ",
     href: "/dashboard/eoq",
     icon: Calculator
   },
   {
-    title: "Catat Transaksi",
+    title: "Transaksi Stok",
     href: "/dashboard/transactions",
     icon: ArrowRightLeft
+  },
+  {
+    title: "Tambah Data Produk",
+    href: "/dashboard/inventory/add",
+    icon: LayoutIcon
   }
+  
 ]
 
 export function DashboardSidebar() {

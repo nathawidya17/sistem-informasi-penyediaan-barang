@@ -12,9 +12,7 @@ export default function EOQPage() {
         </div>
       </div>
       
-      {/* Panggil Calculator Disini */}
       <EOQCalculator />
-      
     </div>
   )
 }
