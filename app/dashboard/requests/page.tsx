@@ -13,17 +13,26 @@ export default async function RequestsPage() {
   const user = session ? JSON.parse(session) : { role: "GUEST" }
   const userRole = user.role
 
-  // Ambil data SPP + Detail Item + Nama Material
+  // 1. Ambil Data SPP + Detail Item + Data PO (PENTING: Include purchaseOrders)
   const requests = await prisma.purchaseRequest.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
       items: {
         include: { material: true }
+      },
+      // KITA BUTUH DATA PO UNTUK CEK STATUS MANAJER
+      purchaseOrders: {
+        include: {
+          supplier: true,
+          items: {
+            include: { material: true }
+          }
+        }
       }
     }
   })
 
-  // Ambil list material untuk modal create (Gudang)
+  // 2. Ambil list material untuk modal create (Gudang)
   const materials = await prisma.material.findMany({
     select: { id: true, name: true, satuan: true },
     orderBy: { name: 'asc' }

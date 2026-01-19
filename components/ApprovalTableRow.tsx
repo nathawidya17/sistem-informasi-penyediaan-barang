@@ -36,7 +36,7 @@ export default function ApprovalTableRow({ po }: { po: any }) {
     }
   }
 
-  // Hitung Total Singkat
+  // Hitung Total Singkat untuk tampilan tabel
   const totalAmount = po.items.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0)
 
   return (
@@ -47,6 +47,7 @@ export default function ApprovalTableRow({ po }: { po: any }) {
             <div className="font-medium text-slate-700">{po.supplier.name}</div>
         </TableCell>
         <TableCell>
+            {/* PERBAIKAN: Gunakan .date */}
             {new Date(po.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
         </TableCell>
         <TableCell>
@@ -60,19 +61,25 @@ export default function ApprovalTableRow({ po }: { po: any }) {
         <TableCell className="text-center">
           <div className="flex items-center justify-center gap-1">
             
-            {/* 1. Detail (Semua Status Bisa Lihat) */}
-            <Button variant="ghost" size="sm" onClick={() => setShowDetail(true)} title="Lihat Detail">
-              <Eye className="w-4 h-4 text-slate-500" />
+            {/* 1. Tombol Detail (Mata) - Selalu Muncul */}
+            <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowDetail(true)} 
+                title="Lihat Detail Barang"
+                className="hover:bg-blue-50 text-slate-500 hover:text-blue-600"
+            >
+              <Eye className="w-4 h-4" />
             </Button>
 
-            {/* 2. Approve/Reject (HANYA MUNCUL JIKA PENDING) */}
+            {/* 2. Tombol Approve/Reject - HANYA MUNCUL JIKA PENDING */}
             {po.status === 'PENDING' && (
               <>
                 <div className="w-px h-4 bg-slate-300 mx-2"></div>
                 
                 <Button 
                     size="sm" 
-                    className="bg-green-600 hover:bg-green-700 text-white h-8 w-8 p-0" 
+                    className="bg-green-600 hover:bg-green-700 text-white h-8 w-8 p-0 shadow-sm" 
                     onClick={() => handleAction('APPROVE')} 
                     disabled={isLoading}
                     title="Setujui (Approve)"
@@ -83,7 +90,7 @@ export default function ApprovalTableRow({ po }: { po: any }) {
                 <Button 
                     size="sm" 
                     variant="ghost"
-                    className="text-red-500 hover:bg-red-50 h-8 w-8 p-0" 
+                    className="text-red-500 hover:bg-red-50 h-8 w-8 p-0 ml-1" 
                     onClick={() => handleAction('REJECT')} 
                     disabled={isLoading}
                     title="Tolak (Reject)"
@@ -96,6 +103,7 @@ export default function ApprovalTableRow({ po }: { po: any }) {
         </TableCell>
       </TableRow>
 
+      {/* Ini Modal yang akan muncul saat klik Mata */}
       <PoDetailModal open={showDetail} onClose={() => setShowDetail(false)} po={po} />
     </>
   )
