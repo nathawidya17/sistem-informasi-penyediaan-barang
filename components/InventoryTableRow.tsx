@@ -7,13 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { TableRow, TableCell } from "@/components/ui/table"
 import EditStockModal from '@/components/EditStockModal'
 
-// Tipe data Supplier
+// Tipe data
 type SupplierData = {
   id: string
   name: string
 }
 
-// Tipe data Material
 type MaterialData = {
   id: string
   name: string
@@ -22,6 +21,7 @@ type MaterialData = {
   stock: number
   eoqBiayaPesan: number
   eoqBiayaSimpan: number
+  existingFreq?: number 
   supplier?: {
     id: string
     name: string
@@ -30,12 +30,16 @@ type MaterialData = {
 
 type InventoryTableRowProps = {
   item: MaterialData
-  suppliers: SupplierData[] 
+  suppliers: SupplierData[]
+  userRole: string 
 }
 
-export function InventoryTableRow({ item, suppliers }: InventoryTableRowProps) {
+export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableRowProps) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [key, setKey] = useState(0) 
+
+  // [PERUBAHAN DISINI] Hanya PURCHASING yang bisa edit
+  const canEdit = userRole === "PURCHASING"
 
   const handleSuccess = () => {
     setKey(prev => prev + 1)
@@ -91,7 +95,7 @@ export function InventoryTableRow({ item, suppliers }: InventoryTableRowProps) {
             : <span className="text-slate-300">-</span>}
         </TableCell>
 
-        {/* 6. Stok Fisik (SEJAJAR / SATU BARIS) */}
+        {/* 6. Stok Fisik */}
         <TableCell className="text-right align-top py-4">
             <div className="flex items-baseline justify-end gap-1.5">
                 <span className="text-lg font-bold text-slate-900">
@@ -103,18 +107,20 @@ export function InventoryTableRow({ item, suppliers }: InventoryTableRowProps) {
             </div>
         </TableCell>
 
-        {/* 7. AKSI (Tombol Edit Dengan Border & BG) */}
-        <TableCell className="text-center align-top py-4">
-          <Button
-            size="icon"
-            variant="outline" // Pakai outline biar ada border bawaan
-            onClick={() => setShowEditModal(true)}
-            className="h-8 w-8 bg-white border-slate-300 shadow-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all"
-            title="Edit Data"
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-          </Button>
-        </TableCell>
+        {/* 7. AKSI (Muncul untuk Purchasing Saja) */}
+        {canEdit && (
+          <TableCell className="text-center align-top py-4">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => setShowEditModal(true)}
+              className="h-8 w-8 bg-white border-slate-300 shadow-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all"
+              title="Edit Data Lengkap"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </Button>
+          </TableCell>
+        )}
 
       </TableRow>
 
@@ -126,6 +132,7 @@ export function InventoryTableRow({ item, suppliers }: InventoryTableRowProps) {
           suppliers={suppliers}
           onClose={() => setShowEditModal(false)}
           onSuccess={handleSuccess}
+          userRole={userRole} 
         />
       )}
     </>

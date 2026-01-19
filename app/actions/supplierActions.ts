@@ -5,7 +5,22 @@ import { revalidatePath } from 'next/cache'
 
 const prisma = new PrismaClient()
 
-// Ambil semua supplier
+// ==========================================================
+// 1. FUNGSI BARU (Khusus Dropdown di Modal PO)
+// ==========================================================
+export async function getSuppliersForDropdown() {
+  const suppliers = await prisma.supplier.findMany({
+    select: { id: true, name: true }, // Kita cuma butuh ID & Nama
+    orderBy: { name: 'asc' }
+  })
+  return suppliers
+}
+
+// ==========================================================
+// 2. FUNGSI LAMA (Untuk Halaman Kelola Supplier)
+// ==========================================================
+
+// Ambil semua supplier lengkap
 export async function getSuppliers() {
   return await prisma.supplier.findMany({
     orderBy: { name: 'asc' }

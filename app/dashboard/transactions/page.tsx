@@ -43,7 +43,6 @@ export default async function TransactionPage() {
         </div>
 
         {/* --- PASANG TOMBOL SPP DISINI --- */}
-        <CreateSppModal materials={materials} />
       </div>
 
       {/* Form Transaksi Biasa */}

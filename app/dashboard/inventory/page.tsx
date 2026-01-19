@@ -2,9 +2,9 @@ import { PrismaClient } from "@prisma/client";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Table,
@@ -14,33 +14,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Archive, DollarSign, Package } from "lucide-react"; // Icon tambahan
+import { Archive, DollarSign, Package } from "lucide-react"; 
 import { InventoryTableRow } from "@/components/InventoryTableRow";
+import { cookies } from "next/headers"; 
 
 const prisma = new PrismaClient();
 
 export default async function InventoryPage() {
-  // 1. Ambil Data Material (Include Supplier agar namanya terbaca)
+  // 1. Ambil Session User & Role
+  const cookieStore = await cookies();
+  const session = cookieStore.get("user_session")?.value;
+  const user = session ? JSON.parse(session) : { role: "GUEST" };
+  const userRole = user.role; 
+  
+  // [PERUBAHAN DISINI] Hanya PURCHASING yang boleh edit
+  const canEdit = userRole === "PURCHASING";
+
+  // 2. Ambil Data
   const materials = await prisma.material.findMany({
     orderBy: { name: 'asc' },
-    include: {
-      supplier: true, // Ambil data supplier terkait
-    },
+    include: { supplier: true },
   });
 
-  // 2. Ambil Semua Data Supplier (Untuk Dropdown saat Edit)
   const suppliers = await prisma.supplier.findMany({
     orderBy: { name: 'asc' },
   });
 
   // Hitung Ringkasan
   const totalItem = materials.length;
-  
-  // Hitung Estimasi Aset (Stok * Harga)
   const totalAset = materials.reduce((acc, item) => {
-    const stock = item.stock || 0;
-    const price = item.pricePerUnit || 0;
-    return acc + (stock * price);
+    return acc + ((item.stock || 0) * (item.pricePerUnit || 0));
   }, 0);
 
   return (
@@ -58,7 +61,6 @@ export default async function InventoryPage() {
 
       {/* RINGKASAN ATAS */}
       <div className="grid gap-4 md:grid-cols-3">
-        {/* Card 1: Total Item */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Jenis Bahan</CardTitle>
@@ -70,7 +72,6 @@ export default async function InventoryPage() {
           </CardContent>
         </Card>
 
-        {/* Card 2: Valuasi Aset */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Estimasi Nilai Aset</CardTitle>
@@ -84,7 +85,6 @@ export default async function InventoryPage() {
           </CardContent>
         </Card>
 
-        {/* Card 3: Total Supplier (Opsional, info tambahan) */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Supplier</CardTitle>
@@ -115,7 +115,9 @@ export default async function InventoryPage() {
                 <TableHead>Biaya Pesan (S)</TableHead>
                 <TableHead>Biaya Simpan (H)</TableHead>
                 <TableHead className="text-right">Stok Fisik</TableHead>
-                <TableHead className="text-center">Aksi</TableHead>
+                
+                {/* Header Aksi hanya muncul jika canEdit (Purchasing) */}
+                {canEdit && <TableHead className="text-center">Aksi</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -123,14 +125,15 @@ export default async function InventoryPage() {
                 <InventoryTableRow
                   key={item.id}
                   item={item}
-                  suppliers={suppliers} 
+                  suppliers={suppliers}
+                  userRole={userRole} 
                 />
               ))}
               
               {materials.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center h-24 text-slate-500">
-                    Belum ada data material. Silakan tambah data baru.
+                  <TableCell colSpan={canEdit ? 7 : 6} className="text-center h-24 text-slate-500">
+                    Belum ada data material.
                   </TableCell>
                 </TableRow>
               )}

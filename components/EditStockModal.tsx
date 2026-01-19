@@ -3,8 +3,10 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Save, Loader2 } from 'lucide-react'
-import { updateMaterialAction } from '@/app/actions/updateMaterial' 
+import { updateMaterialAction } from '@/app/actions/updateMaterial'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { 
   Select, 
   SelectContent, 
@@ -13,15 +15,15 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 
-// --- Update Tipe Data (unit -> satuan) ---
 type MaterialData = {
   id: string
   name: string
-  satuan: string // <--- GANTI JADI SATUAN
+  satuan: string 
   pricePerUnit: number
   stock: number
   eoqBiayaPesan: number
   eoqBiayaSimpan: number
+  existingFreq?: number 
   supplier?: { id: string; name: string } | null
 }
 
@@ -35,17 +37,18 @@ type EditStockModalProps = {
   suppliers: SupplierData[] 
   onClose: () => void
   onSuccess?: () => void
+  userRole: string 
 }
 
 const SATUAN_OPTIONS = ["KG", "ROLL", "PCS"]
 
-export default function EditStockModal({ material, suppliers, onClose, onSuccess }: EditStockModalProps) {
+export default function EditStockModal({ material, suppliers, onClose, onSuccess, userRole }: EditStockModalProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   
   // State dropdown
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(material.supplier?.id || "")
-  const [selectedSatuan, setSelectedSatuan] = useState<string>(material.satuan || "KG") // State untuk Satuan
+  const [selectedSupplierId, setSelectedSupplierId] = useState<string>(material.supplier?.id || "null_value")
+  const [selectedSatuan, setSelectedSatuan] = useState<string>(material.satuan || "KG")
 
   useEffect(() => {
     setMounted(true)
@@ -59,10 +62,11 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
 
     const formData = new FormData(e.currentTarget)
     formData.append('id', material.id)
-    formData.append('supplierId', selectedSupplierId)
+    formData.append('role', userRole) 
     
-    // Pastikan satuan terkirim dari state dropdown
-    formData.append('satuan', selectedSatuan) 
+    // Append manual dropdowns
+    formData.append('supplierId', selectedSupplierId)
+    formData.append('satuan', selectedSatuan)
 
     const result = await updateMaterialAction(formData)
 
@@ -86,31 +90,24 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
           <div>
             <h3 className="font-bold text-lg text-slate-800">Edit Data Material</h3>
-            <p className="text-xs text-slate-500 uppercase tracking-wider">ID: {material.id.substring(0, 8)}...</p>
+            <p className="text-xs text-slate-500">Update parameter barang & EOQ</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-red-500 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Form Body (FULL FORM UNTUK PURCHASING) */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           
           <div className="grid grid-cols-2 gap-4">
-            {/* Nama Bahan */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-600">Nama Bahan</label>
-              <input
-                name="name"
-                defaultValue={material.name}
-                required
-                className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
-              />
+              <Label>Nama Bahan</Label>
+              <Input name="name" defaultValue={material.name} required />
             </div>
 
-            {/* Satuan (DROPDOWN BARU) */}
             <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-600">Satuan</label>
+              <Label>Satuan</Label>
               <Select value={selectedSatuan} onValueChange={setSelectedSatuan}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Pilih Satuan" />
@@ -124,13 +121,9 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
             </div>
           </div>
 
-          {/* Supplier */}
           <div className="space-y-1">
-            <label className="text-sm font-medium text-slate-600">Supplier Utama</label>
-            <Select 
-              value={selectedSupplierId} 
-              onValueChange={setSelectedSupplierId}
-            >
+            <Label>Supplier Utama</Label>
+            <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Pilih Supplier..." />
               </SelectTrigger>
@@ -145,78 +138,77 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* Harga */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-600">Harga / {selectedSatuan}</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-slate-400 text-sm">Rp</span>
-                <input
-                  type="number"
-                  name="pricePerUnit"
-                  defaultValue={material.pricePerUnit}
-                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Stok Fisik */}
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-600">Stok Fisik</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  name="stock"
-                  defaultValue={material.stock}
-                  className="w-full pl-3 pr-12 py-2 border border-slate-300 rounded-md text-sm font-bold"
-                />
-                <span className="absolute right-3 top-2 text-slate-400 text-sm">{selectedSatuan}</span>
-              </div>
+          <div className="space-y-1">
+            <Label>Harga Satuan (Rp)</Label>
+            <div className="relative">
+               <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
+               <Input 
+                 name="pricePerUnit" 
+                 type="number" 
+                 defaultValue={material.pricePerUnit} 
+                 className="pl-9"
+               />
             </div>
           </div>
 
-          <hr className="border-slate-100 my-2" />
-
-          {/* Parameter EOQ */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-600">Biaya Pesan (S)</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-slate-400 text-sm">Rp</span>
-                <input
-                  type="number"
-                  name="eoqBiayaPesan"
-                  defaultValue={material.eoqBiayaPesan}
-                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium text-slate-600">Biaya Simpan (H)</label>
-              <div className="relative">
-                <span className="absolute left-3 top-2 text-slate-400 text-sm">Rp</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  name="eoqBiayaSimpan"
-                  defaultValue={material.eoqBiayaSimpan}
-                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md text-sm"
-                />
-              </div>
-            </div>
+          <hr className="border-slate-100" />
+          
+          <div className="bg-blue-50 p-3 rounded-md text-blue-800 text-sm font-medium">
+             Parameter Analisa EOQ
           </div>
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-3 mt-6 pt-2">
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-1">
+                <Label>Biaya Pesan (S)</Label>
+                <div className="relative">
+                   <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
+                   <Input 
+                      name="eoqBiayaPesan" 
+                      type="number" 
+                      defaultValue={material.eoqBiayaPesan} 
+                      className="pl-9"
+                   />
+                </div>
+             </div>
+             
+             <div className="space-y-1">
+                <Label>Biaya Simpan (H)</Label>
+                <div className="relative">
+                   <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
+                   <Input 
+                      name="eoqBiayaSimpan" 
+                      type="number" 
+                      step="0.01"
+                      defaultValue={material.eoqBiayaSimpan} 
+                      className="pl-9"
+                   />
+                </div>
+             </div>
+          </div>
+
+          <div className="space-y-1">
+              <Label>Frekuensi Beli (Existing)</Label>
+              <div className="relative">
+                 <Input 
+                    name="existingFreq" 
+                    type="number" 
+                    defaultValue={material.existingFreq || 0} 
+                    className="pr-16"
+                 />
+                 <span className="absolute right-3 top-2.5 text-slate-400 text-sm">kali/6 bulan</span>
+              </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Batal
             </Button>
-            <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[100px]">
+            <Button type="submit" disabled={isLoading} className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]">
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Simpan
+              Simpan Data
             </Button>
           </div>
+
         </form>
       </div>
     </div>,
