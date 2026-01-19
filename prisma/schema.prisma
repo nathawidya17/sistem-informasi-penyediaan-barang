@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,37 +15,97 @@ model User {
   createdAt DateTime @default(now())
 }
 
-// === MODEL MATERIAL YANG DIPERBARUI ===
-model Material {
-  id             String   @id @default(uuid())
+model Supplier {
+  id             String          @id @default(uuid())
   name           String
-  unit           String
-  pricePerUnit   Float    @default(0)
-  stock          Float    @default(0)
-
-  // 1. Parameter Rumus EOQ
-  eoqBiayaPesan  Float    @default(0) // S
-  eoqBiayaSimpan Float    @default(0) // H
-
-  // 2. Data Aktual (Agar SAMA PERSIS dengan Excel)
-  // Kolom inilah yang tadi bikin error karena belum ada
-  existingHoldCost Float  @default(0) // Simpan angka 324 Juta disini
-  existingFreq     Float  @default(0) // Simpan angka 72 disini
-  existingQty      Float  @default(0) 
-
-  transactions   Transaction[]
+  address        String
+  phone          String
+  materials      Material[]
+  purchaseOrders PurchaseOrder[]
 }
 
-model Supplier {
-  id      String   @id @default(uuid())
-  name    String    
+model Material {
+  id               String          @id @default(uuid())
+  name             String
+  satuan           Material_satuan @default(KG)
+  pricePerUnit     Float           @default(0)
+  stock            Float           @default(0)
+  eoqBiayaPesan    Float           @default(0)
+  eoqBiayaSimpan   Float           @default(0)
+  existingHoldCost Float           @default(0)
+  existingFreq     Float           @default(0)
+  existingQty      Float           @default(0)
+  supplierId       String?
+  supplier         Supplier?       @relation(fields: [supplierId], references: [id])
+  orderItems       OrderItem[]
+  requestItems     RequestItem[]
+  transactions     Transaction[]
+
+  @@index([supplierId], map: "Material_supplierId_fkey")
+}
+
+model PurchaseRequest {
+  id     String        @id @default(uuid())
+  code   String        @unique
+  date   DateTime      @default(now())
+  status String        @default("PENDING")
+  note   String?
+  items  RequestItem[]
+}
+
+model RequestItem {
+  id                String          @id @default(uuid())
+  purchaseRequestId String
+  materialId        String
+  quantity          Float
+  material          Material        @relation(fields: [materialId], references: [id])
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
+
+  @@index([materialId], map: "RequestItem_materialId_fkey")
+  @@index([purchaseRequestId], map: "RequestItem_purchaseRequestId_fkey")
+}
+
+model PurchaseOrder {
+  id          String      @id @default(uuid())
+  code        String      @unique
+  date        DateTime    @default(now())
+  status      String      @default("PENDING")
+  totalAmount Float       @default(0)
+  supplierId  String
+  items       OrderItem[]
+  supplier    Supplier    @relation(fields: [supplierId], references: [id])
+
+  @@index([supplierId], map: "PurchaseOrder_supplierId_fkey")
+}
+
+model OrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  materialId      String
+  quantity        Float
+  price           Float
+  material        Material      @relation(fields: [materialId], references: [id])
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+
+  @@index([materialId], map: "OrderItem_materialId_fkey")
+  @@index([purchaseOrderId], map: "OrderItem_purchaseOrderId_fkey")
 }
 
 model Transaction {
   id         String    @id @default(uuid())
-  date       DateTime  @default(now())
-  type       String    
+  createdAt  DateTime  @default(now())
+  dateIn     DateTime?
+  dateOut    DateTime?
+  type       String
   quantity   Float
   materialId String
   material   Material  @relation(fields: [materialId], references: [id])
+
+  @@index([materialId], map: "Transaction_materialId_fkey")
+}
+
+enum Material_satuan {
+  KG
+  ROLL
+  PCS
 }

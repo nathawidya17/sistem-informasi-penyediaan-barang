@@ -1,136 +1,112 @@
-import { getMaterials } from "@/app/actions/getMaterials";
-import { updateStock } from "@/app/actions/updateStock";
-import { Button } from "@/components/ui/button";
+import { PrismaClient } from "@prisma/client";
+import TransactionForm from "@/components/TransactionsForm"; 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { redirect } from "next/navigation";
-import { InventoryTableRow } from "@/components/InventoryTableRow";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+
+const prisma = new PrismaClient();
 
 export default async function TransactionPage() {
-  const materials = await getMaterials();
-
-  async function submitTransaction(formData: FormData) {
-    'use server'
-    try {
-      await updateStock(formData)
-      redirect('/dashboard/inventory')
-    } catch (error) {
-      console.error(error) 
+  // Ambil data untuk dropdown form
+  const materials = await prisma.material.findMany({
+    orderBy: { name: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      satuan: true, // Pastikan ini terpanggil
+      stock: true
     }
+  })
+
+  // Ambil history transaksi
+  const transactions = await prisma.transaction.findMany({
+    include: { material: true },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  // Helper format tanggal
+  const formatDate = (date: Date | null) => {
+    if (!date) return "-";
+    return new Date(date).toLocaleDateString('id-ID', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
   }
 
   return (
-    // UBAH 1: Container utama diperlebar jadi max-w-7xl (sebelumnya 2xl)
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       
-      {/* Header Judul */}
-      <div className="max-w-2xl mx-auto w-full">
-        <h2 className="text-3xl font-bold tracking-tight">Catat Transaksi Gudang</h2>
+      <div className="flex justify-between items-center">
+        <div>
+           <h2 className="text-3xl font-bold tracking-tight">Transaksi Stok</h2>
+           <p className="text-slate-500">Pencatatan barang masuk (pembelian) dan keluar (produksi).</p>
+        </div>
       </div>
 
-      {/* UBAH 2: Form Input dibungkus div sendiri agar tetap di tengah & rapi (max-w-2xl) */}
-      <div className="max-w-2xl mx-auto w-full">
-        <Card>
-          <CardHeader>
-            <CardTitle>Form Keluar/Masuk Barang</CardTitle>
-            <CardDescription>
-              Catat setiap pergerakan barang untuk menjaga akurasi stok.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Form Server Action */}
-            <form action={submitTransaction} className="space-y-4">
-              
-              {/* Pilih Barang */}
-              <div className="space-y-2">
-                <Label>Nama Barang</Label>
-                <Select name="materialId" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Material..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {materials.map((m) => (
-                      <SelectItem key={m.id} value={m.id}>
-                        {m.name} (Stok: {m.stock} {m.unit})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Load Client Component Form */}
+      <TransactionForm materials={materials} />
 
-              {/* Pilih Jenis Transaksi */}
-              <div className="space-y-2">
-                <Label>Jenis Transaksi</Label>
-                <Select name="type" required defaultValue="OUT">
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Jenis..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="IN">barang MASUK (Pembelian)</SelectItem>
-                    <SelectItem value="OUT">Barang KELUAR (Produksi)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Jumlah */}
-              <div className="space-y-2">
-                <Label>Jumlah (Kg)</Label>
-                <Input type="number" name="quantity" placeholder="0" min="1" step="0.01" required />
-              </div>
-
-              <Button type="submit" className="w-full">
-                Simpan Transaksi
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* UBAH 3: Card Tabel dibiarkan lebar penuh mengikuti container utama (max-w-7xl) */}
-      <Card className="mb-16 py-6 w-full shadow-md border-slate-200">
-        <CardHeader className="px-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Stok & Parameter Biaya (Live)</CardTitle>
-              <CardDescription>
-                Data ini diambil langsung dari database sistem.
-              </CardDescription>
-            </div>
-          </div>
+      {/* TABEL RIWAYAT */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Riwayat Transaksi</CardTitle>
+          <CardDescription>Data historis pergerakan barang di gudang.</CardDescription>
         </CardHeader>
-        <CardContent className="px-0"> {/* Padding x-0 agar garis tabel penuh ke samping */}
+        <CardContent>
           <Table>
             <TableHeader>
-              <TableRow className="bg-slate-50 hover:bg-slate-50">
-                <TableHead className="w-[30%] px-6">Nama Bahan</TableHead>
-                <TableHead className="px-6">Harga/Unit</TableHead>
-                <TableHead className="px-6">Biaya Pesan (S)</TableHead>
-                <TableHead className="px-6">Biaya Simpan (H)</TableHead>
-                <TableHead className="text-right px-6">Stok Fisik</TableHead>
-              </TableRow>
-            </TableHeader>
+  <TableRow className="bg-slate-100">
+    <TableHead className="w-[50px] text-center font-bold text-black">No</TableHead>
+    <TableHead className="font-bold text-black text-center">Tanggal Masuk</TableHead>
+    <TableHead className="font-bold text-black text-center">Tanggal Keluar</TableHead>
+    <TableHead className="font-bold text-black">Nama Barang</TableHead>
+    <TableHead className="font-bold text-black text-center">Satuan</TableHead>
+    <TableHead className="font-bold text-black text-right">Jumlah</TableHead>
+    <TableHead className="font-bold text-black text-center">Status</TableHead>
+  </TableRow>
+</TableHeader>
             <TableBody>
-              {materials.map((item) => (
-                <InventoryTableRow
-                  key={item.id}
-                  item={item}
-                />
+              {transactions.map((trx, index) => (
+                <TableRow key={trx.id}>
+                  <TableCell className="text-center font-medium">{index + 1}</TableCell>
+                  
+                  {/* Tanggal Masuk */}
+                  <TableCell className="text-center">
+                    {trx.dateIn ? <span className="text-emerald-700 font-medium">{formatDate(trx.dateIn)}</span> : "-"}
+                  </TableCell>
+
+                  {/* Tanggal Keluar */}
+                  <TableCell className="text-center">
+                    {trx.dateOut ? <span className="text-red-700 font-medium">{formatDate(trx.dateOut)}</span> : "-"}
+                  </TableCell>
+
+                  <TableCell className="font-bold text-slate-700">
+                    {trx.material.name}
+                  </TableCell>
+
+                  {/* KOLOM SATUAN (Dari DB) */}
+                  <TableCell className="text-center">
+                     <Badge variant="outline" className="bg-slate-50">
+                        {trx.material.satuan}
+                     </Badge>
+                  </TableCell>
+
+                  <TableCell className="text-right font-mono font-bold text-base">
+                    {trx.quantity.toLocaleString('id-ID')}
+                  </TableCell>
+                  
+                  <TableCell className="text-center">
+                    {trx.type === 'IN' 
+                      ? <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">Masuk</span>
+                      : <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Keluar</span>
+                    }
+                  </TableCell>
+                </TableRow>
               ))}
-              
-              {materials.length === 0 && (
+
+              {transactions.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24 text-slate-500">
-                    Belum ada data material. Silakan jalankan seed database.
+                  <TableCell colSpan={7} className="text-center h-24 text-slate-500">
+                    Belum ada data transaksi.
                   </TableCell>
                 </TableRow>
               )}

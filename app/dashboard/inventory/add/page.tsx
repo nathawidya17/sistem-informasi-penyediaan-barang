@@ -1,16 +1,22 @@
-import { addMaterial } from "@/app/actions/addMaterials"
+import { addMaterial } from "@/app/actions/addMaterials" // Pastikan path ini benar
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PackagePlus, Save, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PackagePlus, Save } from "lucide-react"
+import { PrismaClient } from "@prisma/client"
 
-export default function AddProductPage() {
+const prisma = new PrismaClient()
+
+export default async function AddProductPage() {
+  // 1. Ambil Data Supplier untuk Dropdown
+  const suppliers = await prisma.supplier.findMany({
+    orderBy: { name: 'asc' }
+  })
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-    
-
       <div className="flex items-center gap-2 text-blue-600 mb-4">
         <PackagePlus className="h-6 w-6" />
         <h2 className="text-2xl font-bold">Tambah Produk Baru</h2>
@@ -24,7 +30,7 @@ export default function AddProductPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Panggil Server Action di sini */}
+          {/* Panggil Server Action */}
           <form action={addMaterial} className="space-y-6">
             
             {/* Nama & Satuan */}
@@ -39,11 +45,32 @@ export default function AddProductPage() {
               </div>
             </div>
 
+            {/* SUPPLIER (BARU) */}
+            <div className="space-y-2">
+              <Label>Supplier</Label>
+              {/* PENTING: name="supplierId" agar terbaca di server action */}
+              <Select name="supplierId">
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Supplier..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Harga & Stok Awal */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Harga per Unit (Rp)</Label>
-                <Input type="number" name="price" placeholder="0" required />
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
+                  <Input type="number" name="pricePerUnit" placeholder="0" className="pl-9" required />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Stok Awal</Label>
@@ -57,13 +84,19 @@ export default function AddProductPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Biaya Pesan (S)</Label>
-                <Input type="number" name="orderingCost" placeholder="Biaya Ongkir/Admin" />
-                <p className="text-[10px] text-muted-foreground">Rata-rata biaya sekali pesan.</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
+                  <Input type="number" name="eoqBiayaPesan" placeholder="0" className="pl-9" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Biaya per satu kali pemesanan.</p>
               </div>
               <div className="space-y-2">
-                <Label>Biaya Simpan (%)</Label>
-                <Input type="number" name="holdingCost" placeholder="Contoh: 5" step="0.1" />
-                <p className="text-[10px] text-muted-foreground">Masukkan angka persen (misal 5 untuk 5%).</p>
+                <Label>Biaya Simpan / Unit (H)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
+                  <Input type="number" name="eoqBiayaSimpan" placeholder="0" step="0.01" className="pl-9" />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Biaya simpan per unit per tahun.</p>
               </div>
             </div>
 

@@ -45,12 +45,9 @@ export default function EOQCalculator() {
     if (item) {
       setNamaBarang(item.name)
       
-      // Isi Parameter Rumus (Sudah Benar)
       setBiayaPesan(item.eoqBiayaPesan || 0)
       setBiayaSimpan(item.eoqBiayaSimpan || 0)
       
-      // === BAGIAN YANG DIPERBAIKI ===
-      // Menggunakan nama field sesuai kolom di phpMyAdmin
       setFreqAktual(item.existingFreq || 0) 
       setTotalSimpanAktual(item.existingHoldCost || 0) 
       // ==============================
