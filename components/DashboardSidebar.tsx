@@ -30,6 +30,11 @@ const menuItems = [
     title: "Permintaan Pembelian (SPP)",
     href: "/dashboard/requests",
     icon: Dock
+  },
+  {
+    title: "Data Supplier",
+    href: "/dashboard/suppliers",
+    icon: Package 
   }
   
   
