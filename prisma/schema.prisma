@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// === ENUM (Pilihan Tetap) ===
+enum Material_satuan {
+  KG
+  ROLL
+  PCS
+}
+
+enum RequestStatus {
+  PENDING
+  PROCESSED
+  REJECTED
+}
+
+// === MODEL USER ===
 model User {
   id        String   @id @default(uuid())
   username  String   @unique
@@ -15,6 +29,7 @@ model User {
   createdAt DateTime @default(now())
 }
 
+// === MODEL SUPPLIER ===
 model Supplier {
   id             String          @id @default(uuid())
   name           String
@@ -24,19 +39,26 @@ model Supplier {
   purchaseOrders PurchaseOrder[]
 }
 
+// === MODEL MATERIAL (Bahan Baku) ===
 model Material {
   id               String          @id @default(uuid())
   name             String
   satuan           Material_satuan @default(KG)
   pricePerUnit     Float           @default(0)
   stock            Float           @default(0)
+  
+  // Data untuk EOQ & Analisa
   eoqBiayaPesan    Float           @default(0)
   eoqBiayaSimpan   Float           @default(0)
   existingHoldCost Float           @default(0)
   existingFreq     Float           @default(0)
   existingQty      Float           @default(0)
+  
+  // Relasi ke Supplier (Default Supplier)
   supplierId       String?
   supplier         Supplier?       @relation(fields: [supplierId], references: [id])
+  
+  // Relasi ke Transaksi Lain
   orderItems       OrderItem[]
   requestItems     RequestItem[]
   transactions     Transaction[]
@@ -44,68 +66,86 @@ model Material {
   @@index([supplierId], map: "Material_supplierId_fkey")
 }
 
+// === MODEL SPP (Purchase Request - Dari Gudang) ===
 model PurchaseRequest {
-  id     String        @id @default(uuid())
-  code   String        @unique
-  date   DateTime      @default(now())
-  status String        @default("PENDING")
-  note   String?
-  items  RequestItem[]
+  id             String          @id @default(uuid())
+  code           String          @unique
+  createdAt      DateTime        @default(now())
+  status         String          @default("PENDING") // PENDING, PROCESSED, REJECTED
+  note           String?
+  
+  items          RequestItem[]
+
+  // [PENTING] Relasi One-to-Many ke PO (Satu SPP bisa jadi BANYAK PO)
+  purchaseOrders PurchaseOrder[] 
 }
 
+// === MODEL DETAIL SPP ===
 model RequestItem {
   id                String          @id @default(uuid())
+  
   purchaseRequestId String
-  materialId        String
-  quantity          Float
-  material          Material        @relation(fields: [materialId], references: [id])
   purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
+  
+  materialId        String
+  material          Material        @relation(fields: [materialId], references: [id])
+  
+  quantity          Float
+  satuan            String?         
 
   @@index([materialId], map: "RequestItem_materialId_fkey")
   @@index([purchaseRequestId], map: "RequestItem_purchaseRequestId_fkey")
 }
 
+// === MODEL PO (Purchase Order - Dari Purchasing) ===
 model PurchaseOrder {
-  id          String      @id @default(uuid())
-  code        String      @unique
-  date        DateTime    @default(now())
-  status      String      @default("PENDING")
-  totalAmount Float       @default(0)
-  supplierId  String
-  items       OrderItem[]
-  supplier    Supplier    @relation(fields: [supplierId], references: [id])
+  id                String           @id @default(uuid())
+  code              String           @unique
+  date              DateTime         @default(now())
+  status            String           @default("PENDING")
+  totalAmount       Float            @default(0)
+  
+  supplierId        String
+  supplier          Supplier         @relation(fields: [supplierId], references: [id])
+  
+  // [PENTING] Link balik ke SPP (Agar tau PO ini asalnya dari request mana)
+  purchaseRequestId String?          
+  purchaseRequest   PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id])
+  
+  items             OrderItem[]
 
   @@index([supplierId], map: "PurchaseOrder_supplierId_fkey")
+  @@index([purchaseRequestId], map: "PurchaseOrder_purchaseRequestId_fkey")
 }
 
+// === MODEL DETAIL PO ===
 model OrderItem {
   id              String        @id @default(uuid())
+  
   purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  
   materialId      String
+  material        Material      @relation(fields: [materialId], references: [id])
+  
   quantity        Float
   price           Float
-  material        Material      @relation(fields: [materialId], references: [id])
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
 
   @@index([materialId], map: "OrderItem_materialId_fkey")
   @@index([purchaseOrderId], map: "OrderItem_purchaseOrderId_fkey")
 }
 
+// === MODEL TRANSAKSI STOK (History Masuk/Keluar) ===
 model Transaction {
   id         String    @id @default(uuid())
   createdAt  DateTime  @default(now())
   dateIn     DateTime?
   dateOut    DateTime?
-  type       String
+  type       String    // IN atau OUT
   quantity   Float
+  
   materialId String
   material   Material  @relation(fields: [materialId], references: [id])
 
   @@index([materialId], map: "Transaction_materialId_fkey")
-}
-
-enum Material_satuan {
-  KG
-  ROLL
-  PCS
 }

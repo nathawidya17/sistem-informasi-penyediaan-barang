@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Package, Calculator, ArrowRightLeft, LayoutDashboard, LogOut, Layout as LayoutIcon } from "lucide-react" // Pastikan install lucide-react
+import { Package, Calculator, ArrowRightLeft, LayoutDashboard, LogOut, Layout as LayoutIcon, Dock } from "lucide-react" // Pastikan install lucide-react
 import { cn } from "@/lib/utils" // Utility bawaan installan shadcn
 
 const menuItems = [
@@ -25,7 +25,13 @@ const menuItems = [
     title: "Tambah Data Produk",
     href: "/dashboard/inventory/add",
     icon: LayoutIcon
+  },
+  {
+    title: "Permintaan Pembelian (SPP)",
+    href: "/dashboard/requests",
+    icon: Dock
   }
+  
   
 ]
 

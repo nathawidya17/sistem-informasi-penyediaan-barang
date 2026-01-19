@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import TransactionForm from "@/components/TransactionsForm"; 
+import CreateSppModal from "@/components/CreateSppModal"; // <--- IMPORT KOMPONEN BARU
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -7,13 +8,13 @@ import { Badge } from "@/components/ui/badge";
 const prisma = new PrismaClient();
 
 export default async function TransactionPage() {
-  // Ambil data untuk dropdown form
+  // Ambil data untuk dropdown form & modal
   const materials = await prisma.material.findMany({
     orderBy: { name: 'asc' },
     select: {
       id: true,
       name: true,
-      satuan: true, // Pastikan ini terpanggil
+      satuan: true, 
       stock: true
     }
   })
@@ -24,7 +25,6 @@ export default async function TransactionPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  // Helper format tanggal
   const formatDate = (date: Date | null) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString('id-ID', {
@@ -35,14 +35,18 @@ export default async function TransactionPage() {
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       
-      <div className="flex justify-between items-center">
+      {/* HEADER: Judul & Tombol SPP */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
            <h2 className="text-3xl font-bold tracking-tight">Transaksi Stok</h2>
            <p className="text-slate-500">Pencatatan barang masuk (pembelian) dan keluar (produksi).</p>
         </div>
+
+        {/* --- PASANG TOMBOL SPP DISINI --- */}
+        <CreateSppModal materials={materials} />
       </div>
 
-      {/* Load Client Component Form */}
+      {/* Form Transaksi Biasa */}
       <TransactionForm materials={materials} />
 
       {/* TABEL RIWAYAT */}
@@ -54,39 +58,36 @@ export default async function TransactionPage() {
         <CardContent>
           <Table>
             <TableHeader>
-  <TableRow className="bg-slate-100">
-    <TableHead className="w-[50px] text-center font-bold text-black">No</TableHead>
-    <TableHead className="font-bold text-black text-center">Tanggal Masuk</TableHead>
-    <TableHead className="font-bold text-black text-center">Tanggal Keluar</TableHead>
-    <TableHead className="font-bold text-black">Nama Barang</TableHead>
-    <TableHead className="font-bold text-black text-center">Satuan</TableHead>
-    <TableHead className="font-bold text-black text-right">Jumlah</TableHead>
-    <TableHead className="font-bold text-black text-center">Status</TableHead>
-  </TableRow>
-</TableHeader>
+              <TableRow className="bg-slate-100">
+                <TableHead className="w-[50px] text-center font-bold text-black">No</TableHead>
+                <TableHead className="font-bold text-black text-center">Tanggal Masuk</TableHead>
+                <TableHead className="font-bold text-black text-center">Tanggal Keluar</TableHead>
+                <TableHead className="font-bold text-black">Nama Barang</TableHead>
+                <TableHead className="font-bold text-black text-center">Satuan</TableHead>
+                <TableHead className="font-bold text-black text-right">Jumlah</TableHead>
+                <TableHead className="font-bold text-black text-center">Status</TableHead>
+              </TableRow>
+            </TableHeader>
             <TableBody>
               {transactions.map((trx, index) => (
                 <TableRow key={trx.id}>
                   <TableCell className="text-center font-medium">{index + 1}</TableCell>
                   
-                  {/* Tanggal Masuk */}
                   <TableCell className="text-center">
                     {trx.dateIn ? <span className="text-emerald-700 font-medium">{formatDate(trx.dateIn)}</span> : "-"}
                   </TableCell>
 
-                  {/* Tanggal Keluar */}
                   <TableCell className="text-center">
                     {trx.dateOut ? <span className="text-red-700 font-medium">{formatDate(trx.dateOut)}</span> : "-"}
                   </TableCell>
 
                   <TableCell className="font-bold text-slate-700">
-                    {trx.material.name}
+                    {trx.material?.name || "Item Dihapus"}
                   </TableCell>
 
-                  {/* KOLOM SATUAN (Dari DB) */}
                   <TableCell className="text-center">
                      <Badge variant="outline" className="bg-slate-50">
-                        {trx.material.satuan}
+                        {trx.material?.satuan || "-"}
                      </Badge>
                   </TableCell>
 
