@@ -44,16 +44,25 @@ export default function EOQCalculator() {
 
     if (item) {
       setNamaBarang(item.name)
-      // Isi Parameter Rumus
+      
+      // Isi Parameter Rumus (Sudah Benar)
       setBiayaPesan(item.eoqBiayaPesan || 0)
       setBiayaSimpan(item.eoqBiayaSimpan || 0)
-      // Isi Data Aktual 
-      setFreqAktual(item.exFreq || 0) 
-      setTotalSimpanAktual(item.exHoldCost || 0) 
+      
+      // === BAGIAN YANG DIPERBAIKI ===
+      // Menggunakan nama field sesuai kolom di phpMyAdmin
+      setFreqAktual(item.existingFreq || 0) 
+      setTotalSimpanAktual(item.existingHoldCost || 0) 
+      // ==============================
+
       setDemand("") 
     } else {
-      setNamaBarang(""); setBiayaPesan(""); setBiayaSimpan("");
-      setFreqAktual(""); setTotalSimpanAktual(""); setDemand("");
+      setNamaBarang(""); 
+      setBiayaPesan(""); 
+      setBiayaSimpan("");
+      setFreqAktual(""); 
+      setTotalSimpanAktual(""); 
+      setDemand("");
     }
   }
 
