@@ -12,10 +12,16 @@ export type EOQFilter = {
 
 export async function getEOQAnalysis(filter?: EOQFilter) {
   
+  // 1. Filter Material
   const materialWhere: Prisma.MaterialWhereInput = {}
-  if (filter?.category && filter.category !== 'ALL') materialWhere.category = filter.category as MaterialCategory
-  if (filter?.storageType && filter.storageType !== 'ALL') materialWhere.storage = { type: filter.storageType as StorageType }
+  if (filter?.category && filter.category !== 'ALL') {
+    materialWhere.category = filter.category as MaterialCategory
+  }
+  if (filter?.storageType && filter.storageType !== 'ALL') {
+    materialWhere.storage = { type: filter.storageType as StorageType }
+  }
 
+  // 2. Filter Periode (Date Range)
   let dateFilter: any = undefined
   let orderingFilter: any = undefined
 
@@ -25,7 +31,11 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
       const [year, month] = filter.period.split('-').map(Number)
       const startDate = new Date(year, month - 1, 1)
       const endDate = new Date(year, month, 0, 23, 59, 59) 
+      
+      // Filter untuk Transaksi Harian
       dateFilter = { gte: startDate, lte: endDate }
+      
+      // Filter untuk History (String Match)
       const monthName = startDate.toLocaleDateString('id-ID', { month: 'long' })
       orderingFilter = { contains: monthName }
     } else {
@@ -44,38 +54,49 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
   })
 
   const results = materials.map((m) => {
-    // A. Merge Data Demand (D)
+    // --- STEP A: HITUNG DEMAND (D) ---
     const dHist = m.orderings.reduce((sum, o) => sum + o.amount, 0)
+    // Transaksi OUT dihitung sebagai Demand
     const dReal = m.transactions.filter(t => t.type === 'OUT').reduce((sum, t) => sum + t.quantity, 0)
+    
     const D = dHist + dReal
 
-    // B. Merge Data Frequency (Freq)
+    // --- STEP B: HITUNG FREKUENSI (F) ---
     const fHist = m.orderings.reduce((sum, o) => sum + o.frequency, 0)
+    // Transaksi IN dihitung sebagai Frekuensi Pembelian
     const fReal = m.transactions.filter(t => t.type === 'IN').length
+    
     const Freq_Act = fHist + fReal
 
-    // C. Hitung S (Biaya Pesan)
+    // --- STEP C: HITUNG BIAYA PESAN (S) ---
+    // Rumus S = Total Biaya Pesan / Total Frekuensi
     const cHist = m.orderings.reduce((sum, o) => sum + o.price, 0)
-    let S = m.eoqBiayaPesan // Default S
-    if (fHist > 0) S = cHist / fHist
+    
+    let S = m.eoqBiayaPesan // Default jika tidak ada history
+    if (fHist > 0) {
+        S = cHist / fHist // Rata-rata biaya per pesan
+    }
 
-    // D. Hitung H (Biaya Simpan) -> [FIXED ERROR DISINI]
-    // Kita hapus 'm.eoqBiayaSimpan' karena kolomnya sudah tidak ada di DB
-    const H = m.storage?.price || 0 
+    // --- STEP D: HITUNG BIAYA SIMPAN (H) ---
+    // Ambil dari Master Storage (Harga per Unit)
+    const H = m.storage?.price || 0
 
-    // E. Rumus EOQ
+    // --- STEP E: RUMUS EOQ (Q) ---
+    // Q = Akar( 2 * D * S / H )
     let Q_eoq = 0
-    if (H > 0 && D > 0 && S > 0) Q_eoq = Math.sqrt((2 * D * S) / H)
+    if (H > 0 && D > 0 && S > 0) {
+        Q_eoq = Math.sqrt((2 * D * S) / H)
+    }
 
+    // --- STEP F: TURUNAN ---
     const Freq_eoq = Q_eoq > 0 ? D / Q_eoq : 0
     
-    // F. Perhitungan Total Biaya
-    // Aktual: (Freq * S) + (D / Freq / 2 * H)
+    // Total Biaya Aktual
     const OrderCost_Act = Freq_Act * S
     const StorageCost_Act = (Freq_Act > 0) ? (D / Freq_Act / 2) * H : 0
     const Total_Act = OrderCost_Act + StorageCost_Act
 
-    // EOQ: (FreqEOQ * S) + (Q/2 * H)
+    // Total Biaya EOQ
     const OrderCost_EOQ = Freq_eoq * S
     const StorageCost_EOQ = (Q_eoq / 2) * H
     const Total_EOQ = OrderCost_EOQ + StorageCost_EOQ
@@ -89,5 +110,6 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
     }
   })
 
+  // Filter: Hanya tampilkan yang ada Demand
   return results.filter(r => r.D > 0)
 }

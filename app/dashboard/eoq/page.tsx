@@ -173,7 +173,6 @@ export default function EOQPage() {
                 <TableHead className="text-center font-bold text-emerald-700 bg-emerald-50">Freq</TableHead>
                 <TableHead className="text-right font-bold text-emerald-700 bg-emerald-50">Total Biaya</TableHead>
                 
-                <TableHead className="text-center font-bold text-blue-700">Hemat</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -246,16 +245,6 @@ export default function EOQPage() {
                     </TableCell>
                     <TableCell className="text-right font-mono font-bold text-emerald-700 bg-emerald-50/50 border-r border-emerald-100">
                       Rp {item.totalEoq.toLocaleString('id-ID', {maximumFractionDigits:0})}
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      {item.savings > 0 ? (
-                        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200">
-                          Hemat {((item.savings / item.totalAct) * 100).toFixed(0)}%
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-slate-400">Optimal</Badge>
-                      )}
                     </TableCell>
                   </TableRow>
                 ))
