@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Search, Filter, RefreshCw, FileBarChart, Info } from "lucide-react"
-import { getEOQAnalysis } from "@/app/actions/getEOQAnalys"
+import { Loader2, Search, Filter, RefreshCw, FileBarChart, Info, AlertCircle } from "lucide-react"
+import { getEOQAnalysis } from "@/app/actions/getEOQAnalys" // Pastikan nama file action benar
 
 export default function EOQPage() {
   // --- STATE FILTER ---
@@ -20,7 +20,10 @@ export default function EOQPage() {
   // --- STATE DATA ---
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
-  const [hasSearched, setHasSearched] = useState(false) // Penanda apakah sudah pernah klik cari
+  const [hasSearched, setHasSearched] = useState(false)
+  
+  // [BARU] State untuk pesan Error/Validasi
+  const [errorMsg, setErrorMsg] = useState("") 
 
   // Helper: Ubah "2025-04" jadi "April"
   const getPeriodName = (ym: string) => {
@@ -35,10 +38,19 @@ export default function EOQPage() {
     return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
   }
 
-  // --- FUNGSI CARI DATA (Hanya jalan saat tombol diklik) ---
+  // --- FUNGSI CARI DATA ---
   const handleSearch = async () => {
+    // 1. VALIDASI: Cek apakah Periode sudah diisi?
+    if (!periodInput) {
+      setErrorMsg("Harap isi form di atas terlebih dahulu!")
+      return // Stop proses, jangan panggil server
+    }
+
+    // Jika lolos validasi, bersihkan error
+    setErrorMsg("")
     setLoading(true)
-    setHasSearched(true) // Menandakan user sudah melakukan filter
+    setHasSearched(true)
+
     try {
       const result = await getEOQAnalysis({
         period: getPeriodName(periodInput), 
@@ -59,7 +71,8 @@ export default function EOQPage() {
     setCategory("ALL")
     setStorageType("ALL")
     setData([])
-    setHasSearched(false) // Kembali ke status awal (kosong)
+    setHasSearched(false)
+    setErrorMsg("") // Hapus error juga saat reset
   }
 
   return (
@@ -80,20 +93,24 @@ export default function EOQPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
+          
           <div className="grid md:grid-cols-4 gap-4 items-end">
             
-            {/* 1. INPUT PERIODE (BULAN & TAHUN) */}
+            {/* 1. INPUT PERIODE */}
             <div className="space-y-2">
-              <Label className="font-semibold text-slate-700">1. Pilih Periode</Label>
+              <Label className="font-semibold text-slate-700">1. Pilih Periode <span className="text-red-500">*</span></Label>
               <Input 
                 type="month" 
-                className="bg-white border-slate-300 cursor-pointer focus:ring-blue-500"
+                className={`bg-white cursor-pointer focus:ring-blue-500 ${errorMsg ? 'border-red-500 ring-1 ring-red-500' : 'border-slate-300'}`}
                 value={periodInput}
-                onChange={(e) => setPeriodInput(e.target.value)}
+                onChange={(e) => {
+                  setPeriodInput(e.target.value)
+                  if(e.target.value) setErrorMsg("") // Hilangkan error saat user mulai mengetik
+                }}
               />
             </div>
 
-            {/* 2. PILIH KATEGORI BAHAN */}
+            {/* 2. PILIH KATEGORI */}
             <div className="space-y-2">
               <Label className="font-semibold text-slate-700">2. Kategori Bahan</Label>
               <Select value={category} onValueChange={setCategory}>
@@ -108,7 +125,7 @@ export default function EOQPage() {
               </Select>
             </div>
 
-            {/* 3. PILIH JENIS PENYIMPANAN */}
+            {/* 3. PILIH PENYIMPANAN */}
             <div className="space-y-2">
               <Label className="font-semibold text-slate-700">3. Jenis Penyimpanan</Label>
               <Select value={storageType} onValueChange={setStorageType}>
@@ -141,8 +158,16 @@ export default function EOQPage() {
                 Tampilkan Analisis
               </Button>
             </div>
-
           </div>
+
+          {/* [BARU] PESAN ERROR MERAH */}
+          {errorMsg && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+              <AlertCircle className="w-4 h-4 text-red-600" />
+              <span className="text-sm font-medium text-red-600">{errorMsg}</span>
+            </div>
+          )}
+
         </CardContent>
       </Card>
 
@@ -176,20 +201,18 @@ export default function EOQPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* KONDISI 1: Belum pernah search */}
               {!hasSearched && (
                 <TableRow>
                   <TableCell colSpan={9} className="h-48 text-center text-slate-500 bg-slate-50/50">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Info className="w-8 h-8 text-blue-400 mb-2"/>
                       <p className="text-lg font-medium text-slate-700">Data belum ditampilkan</p>
-                      <p className="text-sm">Silakan pilih Periode, Kategori, dan Penyimpanan di atas, lalu klik tombol <span className="font-bold text-blue-600">"Tampilkan Analisis"</span>.</p>
+                      <p className="text-sm">Silakan pilih Periode dan klik <span className="font-bold text-blue-600">"Tampilkan Analisis"</span>.</p>
                     </div>
                   </TableCell>
                 </TableRow>
               )}
 
-              {/* KONDISI 2: Loading */}
               {hasSearched && loading && (
                 <TableRow>
                   <TableCell colSpan={9} className="h-48 text-center text-slate-500">
@@ -201,7 +224,6 @@ export default function EOQPage() {
                 </TableRow>
               )}
 
-              {/* KONDISI 3: Sudah search tapi kosong */}
               {hasSearched && !loading && data.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={9} className="h-48 text-center text-slate-500">
@@ -214,7 +236,6 @@ export default function EOQPage() {
                 </TableRow>
               )}
 
-              {/* KONDISI 4: Ada Data */}
               {hasSearched && !loading && data.length > 0 && (
                 data.map((item, index) => (
                   <TableRow key={item.id} className="hover:bg-slate-50 transition-colors">
