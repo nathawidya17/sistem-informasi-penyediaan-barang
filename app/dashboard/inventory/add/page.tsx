@@ -96,7 +96,7 @@ export default async function AddProductPage() {
                   <span className="absolute left-3 top-2.5 text-slate-400 text-sm">Rp</span>
                   <Input type="number" name="eoqBiayaSimpan" placeholder="0" step="0.01" className="pl-9" />
                 </div>
-                <p className="text-[10px] text-muted-foreground">Biaya simpan per unit per tahun.</p>
+                <p className="text-[10px] text-muted-foreground">Biaya simpan per unit per 6 bulan.</p>
               </div>
             </div>
 

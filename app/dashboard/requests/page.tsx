@@ -34,7 +34,7 @@ export default async function RequestsPage() {
 
   // 2. Ambil list material untuk modal create (Gudang)
   const materials = await prisma.material.findMany({
-    select: { id: true, name: true, satuan: true },
+    select: { id: true, name: true, unit: true },
     orderBy: { name: 'asc' }
   })
 

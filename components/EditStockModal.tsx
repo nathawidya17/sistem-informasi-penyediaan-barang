@@ -18,7 +18,7 @@ import {
 type MaterialData = {
   id: string
   name: string
-  satuan: string 
+  unit: string 
   pricePerUnit: number
   stock: number
   eoqBiayaPesan: number
@@ -48,7 +48,7 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
   
   // State dropdown
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(material.supplier?.id || "null_value")
-  const [selectedSatuan, setSelectedSatuan] = useState<string>(material.satuan || "KG")
+  const [selectedSatuan, setSelectedSatuan] = useState<string>(material.unit || "KG")
 
   useEffect(() => {
     setMounted(true)
@@ -66,7 +66,7 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
     
     // Append manual dropdowns
     formData.append('supplierId', selectedSupplierId)
-    formData.append('satuan', selectedSatuan)
+    formData.append('unit', selectedSatuan)
 
     const result = await updateMaterialAction(formData)
 
@@ -186,18 +186,7 @@ export default function EditStockModal({ material, suppliers, onClose, onSuccess
              </div>
           </div>
 
-          <div className="space-y-1">
-              <Label>Frekuensi Beli (Existing)</Label>
-              <div className="relative">
-                 <Input 
-                    name="existingFreq" 
-                    type="number" 
-                    defaultValue={material.existingFreq || 0} 
-                    className="pr-16"
-                 />
-                 <span className="absolute right-3 top-2.5 text-slate-400 text-sm">kali/6 bulan</span>
-              </div>
-          </div>
+       
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>

@@ -13,7 +13,7 @@ import { createSppAction } from "@/app/actions/sppActions"
 type Material = {
   id: string
   name: string
-  satuan: string
+  unit: string
 }
 
 export default function CreateSppModal({ materials }: { materials: Material[] }) {
@@ -44,7 +44,7 @@ export default function CreateSppModal({ materials }: { materials: Material[] })
       item.materialId = value
       // Auto set satuan sesuai material yang dipilih
       const selectedMat = materials.find(m => m.id === value)
-      if (selectedMat) item.satuan = selectedMat.satuan
+      if (selectedMat) item.satuan = selectedMat.unit
     } 
     else if (field === "quantity") {
       item.quantity = parseFloat(value) || 0
@@ -124,7 +124,7 @@ export default function CreateSppModal({ materials }: { materials: Material[] })
                       <SelectContent>
                         {materials.map((m) => (
                           <SelectItem key={m.id} value={m.id}>
-                            {m.name} ({m.satuan})
+                            {m.name} ({m.unit})
                           </SelectItem>
                         ))}
                       </SelectContent>

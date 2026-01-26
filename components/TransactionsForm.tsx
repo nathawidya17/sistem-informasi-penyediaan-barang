@@ -11,7 +11,7 @@ import { Loader2 } from "lucide-react"
 type Material = {
   id: string
   name: string
-  satuan: string
+  unit: string
   stock: number
 }
 
@@ -35,7 +35,7 @@ export default function TransactionForm({ materials }: { materials: Material[] }
     // 2. Update Visual Satuan (Label)
     const selected = materials.find((m) => m.id === newId)
     if (selected) {
-      setDisplaySatuan(selected.satuan || "-") 
+      setDisplaySatuan(selected.unit || "-") 
     }
   }
 

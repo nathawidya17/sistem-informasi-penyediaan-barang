@@ -9,7 +9,7 @@ const prisma = new PrismaClient()
 type SppItemInput = {
   materialId: string
   quantity: number
-  satuan: string
+  unit: string
 }
 
 export async function createSppAction(note: string, items: SppItemInput[]) {
@@ -34,7 +34,7 @@ export async function createSppAction(note: string, items: SppItemInput[]) {
           create: items.map((item) => ({
             materialId: item.materialId,
             quantity: item.quantity,
-            satuan: item.satuan
+            satuan: item.unit
           }))
         }
       }

@@ -16,7 +16,7 @@ type SupplierData = {
 type MaterialData = {
   id: string
   name: string
-  satuan: string
+  unit: string
   pricePerUnit: number
   stock: number
   eoqBiayaPesan: number
@@ -76,7 +76,7 @@ export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableR
           <div className="font-medium text-slate-700">
             Rp {(item.pricePerUnit || 0).toLocaleString('id-ID')}
           </div>
-          <span className="text-xs text-slate-400">per {item.satuan}</span> 
+          <span className="text-xs text-slate-400">per {item.unit}</span> 
         </TableCell>
 
         {/* 4. Biaya Pesan */}
@@ -102,7 +102,7 @@ export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableR
                   {(item.stock || 0).toLocaleString('id-ID')}
                 </span>
                 <span className="text-xs font-medium text-slate-500 uppercase">
-                  {item.satuan}
+                  {item.unit}
                 </span>
             </div>
         </TableCell>

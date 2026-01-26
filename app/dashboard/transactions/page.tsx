@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client";
 import TransactionForm from "@/components/TransactionsForm"; 
-import CreateSppModal from "@/components/CreateSppModal"; // <--- IMPORT KOMPONEN BARU
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,7 @@ export default async function TransactionPage() {
     select: {
       id: true,
       name: true,
-      satuan: true, 
+      unit: true, 
       stock: true
     }
   })
@@ -67,17 +66,33 @@ export default async function TransactionPage() {
                 <TableHead className="font-bold text-black text-center">Status</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+           <TableBody>
               {transactions.map((trx, index) => (
                 <TableRow key={trx.id}>
                   <TableCell className="text-center font-medium">{index + 1}</TableCell>
                   
+                  {/* --- LOGIKA TANGGAL MASUK --- */}
+                  {/* Jika tipe IN, tampilkan tanggal. Jika tidak, strip (-). */}
                   <TableCell className="text-center">
-                    {trx.dateIn ? <span className="text-emerald-700 font-medium">{formatDate(trx.dateIn)}</span> : "-"}
+                    {trx.type === 'IN' ? (
+                      <span className="text-emerald-700 font-medium">
+                        {formatDate(trx.createdAt)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
                   </TableCell>
 
+                  {/* --- LOGIKA TANGGAL KELUAR --- */}
+                  {/* Jika tipe OUT, tampilkan tanggal. Jika tidak, strip (-). */}
                   <TableCell className="text-center">
-                    {trx.dateOut ? <span className="text-red-700 font-medium">{formatDate(trx.dateOut)}</span> : "-"}
+                    {trx.type === 'OUT' ? (
+                       <span className="text-red-700 font-medium">
+                         {formatDate(trx.createdAt)}
+                       </span>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
                   </TableCell>
 
                   <TableCell className="font-bold text-slate-700">
@@ -86,7 +101,7 @@ export default async function TransactionPage() {
 
                   <TableCell className="text-center">
                      <Badge variant="outline" className="bg-slate-50">
-                        {trx.material?.satuan || "-"}
+                        {trx.material?.unit || "-"}
                      </Badge>
                   </TableCell>
 

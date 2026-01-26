@@ -1,46 +1,39 @@
-import { PrismaClient, Role, RequestStatus, Material_satuan } from '@prisma/client'
-
+import { PrismaClient, Role, MaterialCategory, StorageType } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Memulai Seeding Database...')
+  console.log('🌱 Seeding Data...')
 
-  // 1. BERSIHKAN DATA LAMA
-  // Urutan delete penting untuk menghindari error Foreign Key
-  await prisma.orderItem.deleteMany()
-  await prisma.requestItem.deleteMany()
-  await prisma.transaction.deleteMany()
-  await prisma.purchaseOrder.deleteMany()
-  await prisma.purchaseRequest.deleteMany()
-  await prisma.material.deleteMany()
-  await prisma.supplier.deleteMany()
-  await prisma.user.deleteMany()
+  // 1. BERSIHKAN
+  try {
+    await prisma.ordering.deleteMany()
+    await prisma.transaction.deleteMany() // Hapus transaksi lama
+    await prisma.requestItem.deleteMany()
+    await prisma.orderItem.deleteMany()
+    await prisma.purchaseOrder.deleteMany()
+    await prisma.purchaseRequest.deleteMany()
+    await prisma.material.deleteMany()
+    await prisma.storage.deleteMany()
+    await prisma.user.deleteMany()
+  } catch (e) {}
 
-  console.log('🧹 Database dibersihkan.')
-
-  // 2. BUAT USER (Menggunakan Enum Role)
+  // 2. USER
   await prisma.user.createMany({
     data: [
-      {
-        username: 'gudang',
-        password: '123',
-        role: Role.GUDANG
-      },
-      {
-        username: 'purchasing',
-        password: '123',
-        role: Role.PURCHASING
-      },
-      {
-        username: 'manajer',
-        password: '123',
-        role: Role.MANAJER
-      }
-    ]
+      { username: 'gudang', password: '123', role: Role.GUDANG },
+      { username: 'purchasing', password: '123', role: Role.PURCHASING },
+      { username: 'manajer', password: '123', role: Role.MANAJER }
+    ],
+    skipDuplicates: true
   })
-  console.log('👤 3 User dibuat (Gudang, Purchasing, Manajer).')
 
-  // 3. BUAT SUPPLIERS (Data Lengkap)
+  // 3. STORAGE (H)
+  const stgTerigu = await prisma.storage.create({ data: { name: 'Gudang Bahan Baku A', type: StorageType.DRY_STORAGE, price: 447.47 } })
+  const stgGula = await prisma.storage.create({ data: { name: 'Gudang Bahan Baku B', type: StorageType.DRY_STORAGE, price: 595.86 } })
+  const stgSusu = await prisma.storage.create({ data: { name: 'Gudang Bahan Baku C', type: StorageType.DRY_STORAGE, price: 8966.38 } })
+  const stgChem = await prisma.storage.create({ data: { name: 'Gudang Kimia', type: StorageType.CHEMICAL_STORAGE, price: 500 } })
+
+  // 4. SUPPLIER
   await prisma.supplier.createMany({
     data: [
       { id: 'b835a9c4-f52f-11f0-bff1-221aaedcbe0c', name: 'Bakels ( Malaysia ) SDN BHD', address: 'Jl. Raya Industri Malaysia No. 101, Kuala Lumpur', phone: '+60-3-555-0101' },
@@ -75,7 +68,7 @@ async function main() {
       { id: 'b83672a0-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Putra Abtar Mandiri', address: 'Jl. Mandiri Raya No. 4, Jakarta', phone: '021-5550130' },
       { id: 'b83672b4-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. SMART TBK', address: 'Jl. Sinar Mas No. 1, Jakarta', phone: '021-5550131' },
       { id: 'b83672be-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Saf Indonusa', address: 'Jl. Indonusa No. 9, Jakarta', phone: '021-5550132' },
-      { id: 'b83672d2-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Sakura Prima Jaya Lestari', address: 'Jl. Sakura No. 15, Jepang (Dummy)', phone: '021-5550133' },
+      { id: 'b83672d2-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Sakura Prima Jaya Lestari', address: 'Jl. Sakura No. 15, Jepang', phone: '021-5550133' },
       { id: 'b83672f0-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Sarana Prima Nusantara', address: 'Jl. Prima No. 2, Semarang', phone: '024-5550134' },
       { id: 'b83672fa-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Sentra Usahatama Jaya', address: 'Jl. Usaha Jaya No. 6, Surabaya', phone: '031-5550135' },
       { id: 'b836730e-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Sukses Andalan Global', address: 'Jl. Global No. 10, Jakarta', phone: '021-5550136' },
@@ -85,126 +78,64 @@ async function main() {
       { id: 'b836734a-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. United Chemical Inter Aneka', address: 'Jl. Inter Aneka No. 5, Jakarta', phone: '021-5550140' },
       { id: 'b8367368-f52f-11f0-bff1-221aaedcbe0c', name: 'PT. Yahe Internasional Indonesia', address: 'Jl. Internasional No. 88, Jakarta', phone: '021-5550141' },
       { id: 'b8367372-f52f-11f0-bff1-221aaedcbe0c', name: 'Toko Berkah Jaya', address: 'Jl. Pasar Baru No. 10, Jakarta', phone: '021-5550142' }
-    ]
+    ],
+    skipDuplicates: true
   })
-  console.log('🏭 42 Supplier dibuat.')
 
-  // 4. BUAT MATERIALS (Pakai Enum Material_satuan)
-  await prisma.material.createMany({
-    data: [
-      {
-        id: '1',
-        name: 'Terigu Golden Crown',
-        satuan: Material_satuan.KG, // Menggunakan Enum
-        pricePerUnit: 10320,
-        stock: 4000,
-        eoqBiayaPesan: 140785583,
-        eoqBiayaSimpan: 447.47,
-        existingHoldCost: 324000000,
-        existingFreq: 72,
-        supplierId: 'b83671d8-f52f-11f0-bff1-221aaedcbe0c' // PT. Bungasari
-      },
-      {
-        id: '2',
-        name: 'Gula Rafinasi Grade B',
-        satuan: Material_satuan.KG, // Menggunakan Enum
-        pricePerUnit: 7200,
-        stock: 2000,
-        eoqBiayaPesan: 120030000,
-        eoqBiayaSimpan: 595.86,
-        existingHoldCost: 216000000,
-        existingFreq: 30,
-        supplierId: 'b83672fa-f52f-11f0-bff1-221aaedcbe0c' // PT. Sentra Usahatama
-      }
-    ]
-  })
-  console.log('📦 2 Material dibuat.')
-
-  // 5. BUAT TRANSAKSI HISTORY
-  await prisma.transaction.createMany({
-    data: [
-      {
-        id: '761e76e2-9542-4a45-a803-ec7171d26971',
-        type: 'IN',
-        quantity: 1000,
-        materialId: '1',
-        dateIn: new Date('2026-01-18')
-      },
-      {
-        id: 'b9ac4633-f614-4696-9483-62e3e8dc082f',
-        type: 'OUT',
-        quantity: 1000,
-        materialId: '2',
-        dateOut: new Date('2026-01-18')
-      }
-    ]
-  })
-  console.log('📝 Transaksi history dibuat.')
-
-  // 6. BUAT SPP (REQUEST) - Menggunakan Enum RequestStatus
+  // 5. MATERIAL & HISTORY (D & S)
   
-  // SPP 1
-  await prisma.purchaseRequest.create({
+  // Terigu
+  const terigu = await prisma.material.create({
     data: {
-      id: '4ae63a88-ecb6-4222-861a-b80b0c343cd8',
-      code: 'SPP-20260119-574',
-      status: RequestStatus.PENDING, // Menggunakan Enum
-      note: 'Stock menipis',
-      items: {
-        create: [
-          {
-            id: '0579b093-797a-41e3-9275-9a696b17e65b',
-            materialId: '2', 
-            quantity: 5000,
-            satuan: 'KG'
-          },
-          {
-            id: '1ee2e018-f962-4d29-b7d5-031586ab1b2d',
-            materialId: '1', 
-            quantity: 1000,
-            satuan: 'KG'
-          }
-        ]
-      }
+      name: 'Terigu Golden Crown',
+      unit: 'Kg',
+      category: MaterialCategory.BAHAN_BAKU,
+      pricePerUnit: 10320,
+      stock: 4000,
+      existingHoldCost: 324000000, 
+      eoqBiayaPesan: 140785583,
+      storageId: stgTerigu.id,
+      supplierId: 'b835a9c4-f52f-11f0-bff1-221aaedcbe0c'
+    }
+  })
+  // History Excel
+  await prisma.ordering.create({
+    data: {
+      materialId: terigu.id,
+      period: 'April - September 2025', // String biasa
+      amount: 724075,
+      frequency: 72,
+      price: 10136562000
     }
   })
 
-  // SPP 2
-  await prisma.purchaseRequest.create({
+  // Gula
+  const gula = await prisma.material.create({
     data: {
-      id: 'f1e9320d-6bb1-4ccb-9574-81e6c4dd7fca',
-      code: 'SPP-20260119-146',
-      status: RequestStatus.PENDING, // Menggunakan Enum
-      note: 'beak', 
-      items: {
-        create: [
-          {
-            id: 'cfb46a4b-9525-47b5-b1a1-d356797fa10e',
-            materialId: '2', 
-            quantity: 10000,
-            satuan: 'KG'
-          },
-          {
-            id: 'd429c3b3-bf21-405b-89d0-748f27bbb8f7',
-            materialId: '1', 
-            quantity: 50000,
-            satuan: 'KG'
-          }
-        ]
-      }
+      name: 'Gula Rafinasi Grade B',
+      unit: 'Kg',
+      category: MaterialCategory.BAHAN_BAKU,
+      pricePerUnit: 7200,
+      stock: 2000,
+      existingHoldCost: 216000000,
+      eoqBiayaPesan: 120030000,
+      storageId: stgGula.id,
+      supplierId: 'b8364b9a-f52f-11f0-bff1-221aaedcbe0c'
+    }
+  })
+  await prisma.ordering.create({
+    data: {
+      materialId: gula.id,
+      period: 'April - September 2025',
+      amount: 362500,
+      frequency: 30,
+      price: 3600900000
     }
   })
 
-  console.log('📑 2 SPP dibuat.')
-  console.log('✅ SEEDING SELESAI!')
+  console.log('✅ Seeding Selesai.')
 }
 
 main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
-  .catch(async (e) => {
-    console.error(e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+  .then(async () => { await prisma.$disconnect() })
+  .catch(async (e) => { console.error(e); await prisma.$disconnect(); process.exit(1) })
