@@ -76,7 +76,7 @@ export default async function TransactionPage() {
                   <TableCell className="text-center">
                     {trx.type === 'IN' ? (
                       <span className="text-emerald-700 font-medium">
-                        {formatDate(trx.createdAt)}
+                        {formatDate(trx.date)}
                       </span>
                     ) : (
                       <span className="text-slate-300">-</span>
@@ -88,7 +88,7 @@ export default async function TransactionPage() {
                   <TableCell className="text-center">
                     {trx.type === 'OUT' ? (
                        <span className="text-red-700 font-medium">
-                         {formatDate(trx.createdAt)}
+                         {formatDate(trx.date)}
                        </span>
                     ) : (
                       <span className="text-slate-300">-</span>

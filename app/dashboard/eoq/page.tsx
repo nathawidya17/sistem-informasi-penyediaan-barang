@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Loader2, Search, Filter, RefreshCw, FileBarChart, Info, AlertCircle } from "lucide-react"
-import { getEOQAnalysis } from "@/app/actions/getEOQAnalys" // Pastikan nama file action benar
+// Pastikan import ini sesuai dengan nama file Anda (misal: getEOQAnalysis.ts)
+import { getEOQAnalysis } from "@/app/actions/getEOQAnalys" 
 
 export default function EOQPage() {
   // --- STATE FILTER ---
@@ -22,19 +22,15 @@ export default function EOQPage() {
   const [loading, setLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   
-  // [BARU] State untuk pesan Error/Validasi
+  // State untuk pesan Error/Validasi
   const [errorMsg, setErrorMsg] = useState("") 
 
-  // Helper: Ubah "2025-04" jadi "April"
-  const getPeriodName = (ym: string) => {
-    if (!ym) return undefined
-    const date = new Date(`${ym}-01`)
-    return date.toLocaleDateString('id-ID', { month: 'long' })
-  }
-
+  // Helper: Ubah "2025-04" jadi "April 2025" untuk Tampilan UI Saja
   const getFullPeriodName = (ym: string) => {
     if (!ym) return undefined
     const date = new Date(`${ym}-01`)
+    // Validasi agar tidak error jika tanggal invalid
+    if (isNaN(date.getTime())) return ym 
     return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
   }
 
@@ -42,24 +38,27 @@ export default function EOQPage() {
   const handleSearch = async () => {
     // 1. VALIDASI: Cek apakah Periode sudah diisi?
     if (!periodInput) {
-      setErrorMsg("Harap isi form di atas terlebih dahulu!")
-      return // Stop proses, jangan panggil server
+      setErrorMsg("Harap pilih Periode terlebih dahulu!")
+      return // Stop proses
     }
 
     // Jika lolos validasi, bersihkan error
     setErrorMsg("")
     setLoading(true)
     setHasSearched(true)
+    setData([]) // Kosongkan data lama saat loading
 
     try {
+      // [PENTING] Kirim periodInput mentah (YYYY-MM), JANGAN diubah jadi nama bulan
       const result = await getEOQAnalysis({
-        period: getPeriodName(periodInput), 
+        period: periodInput, 
         category: category,
         storageType: storageType
       })
       setData(result)
     } catch (error) {
-      console.error("Error:", error)
+      console.error("Error fetching EOQ:", error)
+      setErrorMsg("Terjadi kesalahan saat mengambil data.")
     } finally {
       setLoading(false)
     }
@@ -72,7 +71,7 @@ export default function EOQPage() {
     setStorageType("ALL")
     setData([])
     setHasSearched(false)
-    setErrorMsg("") // Hapus error juga saat reset
+    setErrorMsg("") 
   }
 
   return (
@@ -81,7 +80,7 @@ export default function EOQPage() {
       <div className="flex flex-col gap-2">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">Analisis Optimalisasi EOQ</h2>
         <p className="text-muted-foreground">
-          Sistem perhitungan otomatis D, S, dan H berdasarkan riwayat pesanan.
+          Sistem perhitungan otomatis D (Demand), S (Biaya Pesan), dan H (Biaya Simpan) berdasarkan riwayat transaksi.
         </p>
       </div>
 
@@ -105,7 +104,7 @@ export default function EOQPage() {
                 value={periodInput}
                 onChange={(e) => {
                   setPeriodInput(e.target.value)
-                  if(e.target.value) setErrorMsg("") // Hilangkan error saat user mulai mengetik
+                  if(e.target.value) setErrorMsg("") 
                 }}
               />
             </div>
@@ -160,7 +159,7 @@ export default function EOQPage() {
             </div>
           </div>
 
-          {/* [BARU] PESAN ERROR MERAH */}
+          {/* PESAN ERROR MERAH */}
           {errorMsg && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
               <AlertCircle className="w-4 h-4 text-red-600" />
@@ -218,7 +217,7 @@ export default function EOQPage() {
                   <TableCell colSpan={9} className="h-48 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Loader2 className="w-8 h-8 animate-spin text-blue-600"/>
-                      <p>Sedang menghitung EOQ...</p>
+                      <p>Sedang menghitung EOQ (Data 6 Bulan Terakhir)...</p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -229,7 +228,7 @@ export default function EOQPage() {
                   <TableCell colSpan={9} className="h-48 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Search className="w-8 h-8 text-slate-300"/>
-                      <p>Tidak ada data transaksi yang sesuai filter ini.</p>
+                      <p>Tidak ada data transaksi (OUT) pada periode 6 bulan ke belakang.</p>
                       <Button variant="link" onClick={handleReset}>Reset Filter</Button>
                     </div>
                   </TableCell>
@@ -249,7 +248,7 @@ export default function EOQPage() {
                     </TableCell>
 
                     <TableCell className="text-right font-mono text-slate-600 border-l border-slate-100 bg-slate-50/30">
-                      {item.D.toLocaleString()}
+                      {item.D.toLocaleString('id-ID')} <span className="text-xs text-slate-400">{item.unit}</span>
                     </TableCell>
                     <TableCell className="text-right font-mono text-slate-600 bg-slate-50/30">
                       {item.S.toLocaleString('id-ID', {maximumFractionDigits:0})}
@@ -259,7 +258,7 @@ export default function EOQPage() {
                     </TableCell>
 
                     <TableCell className="text-right font-mono font-bold text-emerald-700 bg-emerald-50/50 border-l border-emerald-100">
-                      {item.qEoq.toLocaleString('id-ID', {maximumFractionDigits:0})}
+                      {item.qEoq.toLocaleString('id-ID', {maximumFractionDigits:0})} <span className="text-xs font-normal text-emerald-500">{item.unit}</span>
                     </TableCell>
                     <TableCell className="text-center font-bold text-emerald-700 bg-emerald-50/50">
                       {item.freqEoq.toFixed(1)}x

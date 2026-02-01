@@ -79,21 +79,7 @@ export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableR
           <span className="text-xs text-slate-400">per {item.unit}</span> 
         </TableCell>
 
-        {/* 4. Biaya Pesan */}
-        <TableCell className="text-slate-600 align-top py-4 text-sm">
-          {item.eoqBiayaPesan > 0
-            ? `Rp ${(item.eoqBiayaPesan || 0).toLocaleString('id-ID', { maximumFractionDigits: 0 })}`
-            : <span className="text-slate-300">-</span>}
-        </TableCell>
-
-        {/* 5. Biaya Simpan */}
-        <TableCell className="align-top py-4">
-          {item.eoqBiayaSimpan > 0
-            ? <span className="text-emerald-700 font-medium bg-emerald-50 px-2 py-1 rounded text-xs border border-emerald-100">
-              Rp {(item.eoqBiayaSimpan || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
-            </span>
-            : <span className="text-slate-300">-</span>}
-        </TableCell>
+       
 
         {/* 6. Stok Fisik */}
         <TableCell className="text-right align-top py-4">

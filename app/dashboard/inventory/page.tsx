@@ -112,8 +112,6 @@ export default async function InventoryPage() {
                 <TableHead className="w-[200px]">Nama Bahan</TableHead>
                 <TableHead>Supplier Utama</TableHead>
                 <TableHead>Harga/Unit</TableHead>
-                <TableHead>Biaya Pesan (S)</TableHead>
-                <TableHead>Biaya Simpan (H)</TableHead>
                 <TableHead className="text-right">Stok Fisik</TableHead>
                 
                 {/* Header Aksi hanya muncul jika canEdit (Purchasing) */}

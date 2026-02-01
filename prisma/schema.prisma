@@ -7,137 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  username  String   @unique
-  password  String
-  role      Role     @default(GUDANG)
-  createdAt DateTime @default(now())
-}
-
-model Storage {
-  id           String        @id @default(uuid())
-  name         String
-  type         StorageType   @default(GENERAL_STORAGE)
-  price        Float         @default(0)
-  materials    Material[]
-  transactions Transaction[]
-}
-
-model Supplier {
-  id             String          @id @default(uuid())
-  name           String
-  address        String?
-  phone          String?
-  materials      Material[]
-  orderings      Ordering[]
-  purchaseOrders PurchaseOrder[]
-}
-
-model Material {
-  id            String           @id @default(uuid())
-  name          String
-  unit          String           @default("Kg")
-  pricePerUnit  Float            @default(0)
-  stock         Float            @default(0)
-  category      MaterialCategory @default(BAHAN_BAKU)
-  eoqBiayaPesan Float            @default(0)
-  storageId     String?
-  supplierId    String?
-  storage       Storage?         @relation(fields: [storageId], references: [id])
-  supplier      Supplier?        @relation(fields: [supplierId], references: [id])
-  orderItems    OrderItem[]
-  orderings     Ordering[]
-  requestItems  RequestItem[]
-  transactions  Transaction[]
-
-  @@index([supplierId])
-  @@index([storageId])
-}
-
-model Ordering {
-  id         String    @id @default(uuid())
-  materialId String
-  supplierId String?
-  period     String
-  amount     Float
-  price      Float
-  frequency  Int
-  material   Material  @relation(fields: [materialId], references: [id])
-  supplier   Supplier? @relation(fields: [supplierId], references: [id])
-
-  @@index([materialId])
-  @@index([supplierId])
-}
-
-model Transaction {
-  id         String   @id @default(uuid())
-  createdAt  DateTime @default(now())
-  date       DateTime @default(now())
-  type       String
-  quantity   Float
-  note       String?
-  materialId String
-  storageId  String?
-  material   Material @relation(fields: [materialId], references: [id])
-  storage    Storage? @relation(fields: [storageId], references: [id])
-
-  @@index([materialId])
-  @@index([storageId])
-}
-
-model PurchaseRequest {
-  id             String          @id @default(uuid())
-  code           String          @unique
-  createdAt      DateTime        @default(now())
-  status         RequestStatus   @default(PENDING)
-  note           String?
-  purchaseOrders PurchaseOrder[]
-  items          RequestItem[]
-}
-
-model RequestItem {
-  id                String          @id @default(uuid())
-  purchaseRequestId String
-  materialId        String
-  quantity          Float
-  unit              String?
-  material          Material        @relation(fields: [materialId], references: [id])
-  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
-
-  @@index([purchaseRequestId])
-  @@index([materialId])
-}
-
-model PurchaseOrder {
-  id                String           @id @default(uuid())
-  code              String           @unique
-  date              DateTime         @default(now())
-  status            String           @default("PENDING")
-  totalAmount       Float            @default(0)
-  supplierId        String
-  purchaseRequestId String?
-  items             OrderItem[]
-  purchaseRequest   PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id])
-  supplier          Supplier         @relation(fields: [supplierId], references: [id])
-
-  @@index([supplierId])
-  @@index([purchaseRequestId])
-}
-
-model OrderItem {
-  id              String        @id @default(uuid())
-  purchaseOrderId String
-  materialId      String
-  quantity        Float
-  price           Float
-  material        Material      @relation(fields: [materialId], references: [id])
-  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
-
-  @@index([purchaseOrderId])
-  @@index([materialId])
-}
-
 enum Role {
   GUDANG
   PURCHASING
@@ -158,8 +27,145 @@ enum StorageType {
   GENERAL_STORAGE
 }
 
-enum RequestStatus {
-  PENDING
-  PROCESSED
-  REJECTED
+// === MODELS ===
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String
+  role      Role     @default(GUDANG)
+  createdAt DateTime @default(now())
+}
+
+model Storage {
+  id            String      @id @default(uuid())
+  name          String
+  type          StorageType @default(GENERAL_STORAGE)
+  
+  // [BARU] Total Biaya Operasional Gudang (Rp)
+  // Contoh: Dry Storage = 720.000.000
+  operatingCost Float       @default(0) 
+  
+  materials     Material[]
+  transactions  Transaction[]
+}
+
+model Supplier {
+  id             String          @id @default(uuid())
+  name           String
+  address        String?
+  phone          String?
+  materials      Material[]
+  purchaseOrders PurchaseOrder[]
+  orderings      Ordering[]
+}
+
+model Material {
+  id           String           @id @default(uuid())
+  name         String
+  unit         String           @default("Kg")
+  pricePerUnit Float            @default(0)
+  stock        Float            @default(0)
+  category     MaterialCategory @default(BAHAN_BAKU)
+
+  // [BARU] Persentase Alokasi Gudang (0.0 - 1.0)
+  // Contoh: 0.45 (45%) untuk Terigu Golden Crown
+  storagePercentage Float @default(0) 
+
+  // [DIHAPUS] eoqBiayaPesan (S) -> Akan dihitung dari rata-rata history Ordering
+  // [DIHAPUS] biayaPenyimpanan -> Akan dihitung dari (Storage.operatingCost * storagePercentage)
+
+  // Relasi
+  storageId    String?
+  storage      Storage?         @relation(fields: [storageId], references: [id])
+  supplierId   String?
+  supplier     Supplier?        @relation(fields: [supplierId], references: [id])
+
+  orderings    Ordering[]       
+  requestItems RequestItem[]
+  orderItems   OrderItem[]
+  transactions Transaction[]
+
+  @@index([supplierId])
+  @@index([storageId])
+}
+
+// ... Model lainnya (Ordering, Transaction, dll) tetap sama ...
+model Ordering {
+  id             String   @id @default(uuid())
+  materialId     String
+  material       Material @relation(fields: [materialId], references: [id])
+  supplierId     String?
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  period         String   
+  amount         Float    
+  frequency      Int      
+  price          Float    // Total Harga Pembelian (Dipakai untuk hitung S)
+
+  @@index([materialId])
+  @@index([supplierId])
+}
+
+model Transaction {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now())
+  date       DateTime  @default(now()) 
+  type       String    
+  quantity   Float
+  note       String?
+  materialId String
+  material   Material  @relation(fields: [materialId], references: [id])
+  storageId  String?
+  storage    Storage?  @relation(fields: [storageId], references: [id])
+  @@index([materialId])
+  @@index([storageId])
+}
+
+model PurchaseRequest {
+  id             String          @id @default(uuid())
+  code           String          @unique
+  createdAt      DateTime        @default(now())
+  status         String          @default("PENDING")
+  note           String?
+  items          RequestItem[]
+  purchaseOrders PurchaseOrder[]
+}
+
+model RequestItem {
+  id                String          @id @default(uuid())
+  purchaseRequestId String
+  purchaseRequest   PurchaseRequest @relation(fields: [purchaseRequestId], references: [id])
+  materialId        String
+  material          Material        @relation(fields: [materialId], references: [id])
+  quantity          Float
+  unit              String?
+  @@index([purchaseRequestId])
+  @@index([materialId])
+}
+
+model PurchaseOrder {
+  id                String           @id @default(uuid())
+  code              String           @unique
+  date              DateTime         @default(now())
+  status            String           @default("PENDING")
+  totalAmount       Float            @default(0)
+  supplierId        String
+  supplier          Supplier         @relation(fields: [supplierId], references: [id])
+  purchaseRequestId String?
+  purchaseRequest   PurchaseRequest? @relation(fields: [purchaseRequestId], references: [id])
+  items             OrderItem[]
+  @@index([supplierId])
+  @@index([purchaseRequestId])
+}
+
+model OrderItem {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  materialId      String
+  material        Material      @relation(fields: [materialId], references: [id])
+  quantity        Float
+  price           Float
+  @@index([purchaseOrderId])
+  @@index([materialId])
 }

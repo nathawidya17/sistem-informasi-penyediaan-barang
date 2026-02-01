@@ -64,6 +64,12 @@ export default function DashboardSidebar({ userRole }: { userRole: string }) {
     icon: FileSignature,
     allowedRoles: ["MANAJER"] // Hanya Manajer
   },
+  {
+      title: "Order Pembelian",
+      href: "/dashboard/order",
+      icon: Package,
+      allowedRoles: ["PURCHASING"]
+  }
   ]
 
   return (
