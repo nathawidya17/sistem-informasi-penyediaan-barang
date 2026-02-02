@@ -12,7 +12,7 @@ export type EOQFilter = {
 
 export async function getEOQAnalysis(filter?: EOQFilter) {
   
-  // 1. Filter
+  // 1. FILTER UMUM
   const materialWhere: Prisma.MaterialWhereInput = {}
   if (filter?.category && filter.category !== 'ALL') {
     materialWhere.category = filter.category as MaterialCategory
@@ -21,35 +21,48 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
     materialWhere.storage = { type: filter.storageType as StorageType }
   }
 
-  // 2. Window Waktu (6 Bulan)
+  // 2. LOGIKA PERIODE (Fixed: Mundur 1 Bulan)
+  // Contoh: User pilih "2025-10" (Oktober)
+  // Kita ingin data Window: 1 April s/d 30 September
+  
   const now = new Date()
-  let targetDate = new Date(now.getFullYear(), now.getMonth(), 1) 
+  let targetDate = new Date(now.getFullYear(), now.getMonth(), 1) // Default bulan ini
 
   if (filter?.period) {
     const parts = filter.period.split('-')
     if (parts.length === 2) {
         const [year, month] = parts.map(Number)
+        // targetDate = 1 Oktober 2025
         if (!isNaN(year) && !isNaN(month)) targetDate = new Date(year, month - 1, 1)
     }
   }
 
-  const windowEnd = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59)
+  // Window Akhir = Akhir bulan SEBELUMNYA (30 September 23:59)
+  const windowEnd = new Date(targetDate)
+  windowEnd.setDate(0) // setDate(0) otomatis mundur ke hari terakhir bulan lalu
+  windowEnd.setHours(23, 59, 59, 999)
+  
+  // Window Awal = Mundur 6 bulan dari target (1 April 00:00)
   const windowStart = new Date(targetDate)
-  windowStart.setMonth(windowStart.getMonth() - 5) 
-  windowStart.setDate(1) 
+  windowStart.setMonth(windowStart.getMonth() - 6) 
+  // (Bulan 10 - 6 = Bulan 4 alias April)
 
+  // Validasi Tanggal
   if (isNaN(windowStart.getTime())) return []
 
-  // 3. Ambil Data (Include Storage untuk dapat OperatingCost)
+  // 3. AMBIL DATA
   const materials = await prisma.material.findMany({
     where: materialWhere,
     include: {
       storage: true, 
-      orderings: true, // Untuk hitung S
-      transactions: {  // Untuk hitung D
+      orderings: true, // History Pembelian (Untuk Hitung S)
+      transactions: {  // History Pemakaian (Untuk Hitung D)
         where: {
           type: 'OUT',
-          date: { gte: windowStart, lte: windowEnd }
+          date: {
+            gte: windowStart, // >= 1 April
+            lte: windowEnd    // <= 30 September
+          }
         }
       }
     },
@@ -58,11 +71,11 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
 
   const results = materials.map((m) => {
     
-    // --- A. HITUNG D (DEMAND) ---
+    // --- A. HITUNG D (Total Pemakaian periode April-September) ---
     const D = m.transactions.reduce((sum, t) => sum + t.quantity, 0)
 
-    // --- B. HITUNG S (BIAYA PESAN) ---
-    // Rumus: Total Biaya Order / Total Frekuensi
+    // --- B. HITUNG S (Biaya Pesan Rata-Rata) ---
+    // S = Total Biaya Pesan / Total Frekuensi
     const totalOrderCost = m.orderings.reduce((sum, o) => sum + o.price, 0)
     const totalFreq = m.orderings.reduce((sum, o) => sum + o.frequency, 0)
     
@@ -71,19 +84,19 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
         S = totalOrderCost / totalFreq
     }
 
-    // --- C. HITUNG H (BIAYA SIMPAN) --- 
-    // Rumus: (Biaya Gudang Total * Persentase Material) / D
-    // Ini membuat H naik jika D turun (boros simpan), dan turun jika D naik (efisien).
+    // --- C. HITUNG H (Biaya Simpan per Unit) --- 
+    // H = (Biaya Gudang Total * % Alokasi) / Total Demand
+    // Ini memastikan H sama persis dengan Excel karena menggunakan pembagi D yang sama
     let H = 0
     const warehouseCost = m.storage?.operatingCost || 0
     const allocation = m.storagePercentage || 0
-    const allocatedCost = warehouseCost * allocation
+    
+    // Total Rupiah yang dialokasikan untuk barang ini
+    const allocatedRupiah = warehouseCost * allocation
 
     if (D > 0) {
-       H = allocatedCost / D 
+       H = allocatedRupiah / D 
     } else {
-       // Fallback kalau D 0 (belum ada transaksi), pakai estimasi harga per unit gudang
-       // atau 0 agar tidak error
        H = 0 
     }
 
@@ -114,5 +127,6 @@ export async function getEOQAnalysis(filter?: EOQFilter) {
     }
   })
 
+  // Filter: Hanya tampilkan yang ada transaksi
   return results.filter(r => r.D > 0)
 }

@@ -27,16 +27,24 @@ export default async function InventoryPage() {
   const user = session ? JSON.parse(session) : { role: "GUEST" };
   const userRole = user.role; 
   
-  // [PERUBAHAN DISINI] Hanya PURCHASING yang boleh edit
+  // Hanya PURCHASING yang boleh edit
   const canEdit = userRole === "PURCHASING";
 
-  // 2. Ambil Data
+  // 2. Ambil Data Material (Include Supplier & Storage)
   const materials = await prisma.material.findMany({
     orderBy: { name: 'asc' },
-    include: { supplier: true },
+    include: { 
+      supplier: true,
+      storage: true // [PENTING] Ambil data gudang yang nempel di material
+    },
   });
 
+  // 3. Ambil Data Master untuk Dropdown di Modal Edit
   const suppliers = await prisma.supplier.findMany({
+    orderBy: { name: 'asc' },
+  });
+
+  const storages = await prisma.storage.findMany({ // [FIX] Ambil data semua gudang
     orderBy: { name: 'asc' },
   });
 
@@ -52,8 +60,8 @@ export default async function InventoryPage() {
       {/* HEADER PAGE */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inventory Gudang</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900">Inventory Gudang</h2>
+          <p className="text-slate-500">
             Monitoring stok fisik, supplier, dan parameter biaya bahan baku.
           </p>
         </div>
@@ -61,61 +69,61 @@ export default async function InventoryPage() {
 
       {/* RINGKASAN ATAS */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card className=" shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Jenis Bahan</CardTitle>
-            <Archive className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-700">Total Jenis Bahan</CardTitle>
+            <Archive className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalItem}</div>
-            <p className="text-xs text-muted-foreground">Item terdaftar di database</p>
+            <div className="text-2xl font-bold text-slate-900">{totalItem}</div>
+            <p className="text-xs text-slate-500">Item terdaftar di database</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className=" shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Estimasi Nilai Aset</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-700">Estimasi Nilai Aset</CardTitle>
+            <DollarSign className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {totalAset.toLocaleString("id-ID", { notation: "compact", maximumFractionDigits: 1 })}
+            <div className="text-2xl font-bold text-slate-900">
+              Rp {totalAset.toLocaleString("id-ID", { notation: "compact", maximumFractionDigits: 0 })}
             </div>
-            <p className="text-xs text-muted-foreground">Total (Stok × Harga Satuan)</p>
+            <p className="text-xs text-slate-500">Total (Stok × Harga Satuan)</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className=" shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Supplier</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-700">Total Supplier</CardTitle>
+            <Package className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{suppliers.length}</div>
-            <p className="text-xs text-muted-foreground">Mitra aktif terdaftar</p>
+            <div className="text-2xl font-bold text-slate-900">{suppliers.length}</div>
+            <p className="text-xs text-slate-500">Mitra aktif terdaftar</p>
           </CardContent>
         </Card>
       </div>
 
       {/* TABEL DATA */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Stok & Parameter Biaya (Live)</CardTitle>
-          <CardDescription>
+      <Card className="shadow-lg border-0">
+        <CardHeader className=" text-slate-800 rounded-t-xl pb-4">
+          <CardTitle className="text-lg">Stok & Parameter Biaya (Live)</CardTitle>
+          <CardDescription className="text-slate-900">
             Data ini diambil langsung dari database sistem.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead className="w-[200px]">Nama Bahan</TableHead>
-                <TableHead>Supplier Utama</TableHead>
-                <TableHead>Harga/Unit</TableHead>
-                <TableHead className="text-right">Stok Fisik</TableHead>
+                <TableHead className="w-[200px] font-bold">Nama Bahan</TableHead>
+                <TableHead className="font-bold">Supplier Utama</TableHead>
+                <TableHead className="text-right font-bold">Harga/Unit</TableHead>
+                <TableHead className="text-right font-bold">Stok Fisik</TableHead>
                 
                 {/* Header Aksi hanya muncul jika canEdit (Purchasing) */}
-                {canEdit && <TableHead className="text-center">Aksi</TableHead>}
+                {canEdit && <TableHead className="text-center font-bold">Aksi</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -124,13 +132,14 @@ export default async function InventoryPage() {
                   key={item.id}
                   item={item}
                   suppliers={suppliers}
+                  storages={storages} 
                   userRole={userRole} 
                 />
               ))}
               
               {materials.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={canEdit ? 7 : 6} className="text-center h-24 text-slate-500">
+                  <TableCell colSpan={canEdit ? 5 : 4} className="text-center h-24 text-slate-500">
                     Belum ada data material.
                   </TableCell>
                 </TableRow>

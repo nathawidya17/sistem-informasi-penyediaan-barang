@@ -2,52 +2,42 @@
 
 import { PrismaClient } from "@prisma/client"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 
 const prisma = new PrismaClient()
 
-export async function addOrder(formData: FormData) {
-  // 1. Ambil Data dari Form
+export async function addOrdering(formData: FormData) {
   const materialId = formData.get("materialId") as string
-  const dateStr = formData.get("date") as string // Format YYYY-MM-DD
-  const amount = parseFloat(formData.get("amount") as string) // Jumlah (Kg)
-  const price = parseFloat(formData.get("price") as string)   // Total Harga (Rp)
+  const supplierId = formData.get("supplierId") as string
+  const period = formData.get("period") as string
+  
+  const amountRaw = formData.get("amount") as string
+  const priceRaw = formData.get("price") as string
+  const freqRaw = formData.get("frequency") as string
 
-  if (!materialId || !dateStr || !amount || !price) {
-    return { success: false, message: "Mohon lengkapi semua data belanja." }
+  const amount = parseFloat(amountRaw) || 0
+  const price = parseFloat(priceRaw) || 0 // Total Rupiah
+  const frequency = parseInt(freqRaw) || 1 // Frekuensi
+
+  if (!materialId || !supplierId || !period) {
+    return { success: false, message: "Data tidak lengkap!" }
   }
 
   try {
-    // 2. Format Periode (Contoh: "Oktober 2025")
-    const dateObj = new Date(dateStr)
-    const period = dateObj.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
-
-    // 3. Cari Material untuk dapat Supplier-nya (Otomatis)
-    const material = await prisma.material.findUnique({
-      where: { id: materialId }
-    })
-
-    if (!material) {
-      return { success: false, message: "Barang tidak ditemukan." }
-    }
-
-    // 4. Simpan ke Tabel Ordering
     await prisma.ordering.create({
       data: {
         materialId,
-        supplierId: material.supplierId, // Otomatis ambil dari master barang
-        period: period,
-        amount: amount,   // Total Berat (Kg)
-        price: price,     // Total Bayar (Rp)
-        frequency: 1      // Default 1 kali transaksi
+        supplierId,
+        period,
+        amount,     // Total Kg
+        price,      // Total Rupiah
+        frequency   // Jumlah Kali Order
       }
     })
 
-    revalidatePath("/dashboard/purchasing/order")
-    return { success: true, message: "Pemesanan berhasil disimpan!" }
-
+    revalidatePath("/dashboard/eoq") // Refresh halaman EOQ biar S terupdate
+    return { success: true, message: "Data ordering berhasil disimpan!" }
   } catch (error) {
-    console.error("Gagal order:", error)
-    return { success: false, message: "Gagal menyimpan data pemesanan." }
+    console.error("Gagal save ordering:", error)
+    return { success: false, message: "Gagal menyimpan data." }
   }
 }

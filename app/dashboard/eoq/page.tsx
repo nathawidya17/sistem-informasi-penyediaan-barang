@@ -78,10 +78,7 @@ export default function EOQPage() {
     <div className="space-y-6 p-6">
       
       <div className="flex flex-col gap-2">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Analisis Optimalisasi EOQ</h2>
-        <p className="text-muted-foreground">
-          Sistem perhitungan otomatis D (Demand), S (Biaya Pesan), dan H (Biaya Simpan) berdasarkan riwayat transaksi.
-        </p>
+        <h2 className="text-3xl font-bold tracking-tight text-slate-900">Sistem Optimalisasi Persediaan Bahan Baku</h2>
       </div>
 
       {/* --- FORM INPUT FILTER --- */}

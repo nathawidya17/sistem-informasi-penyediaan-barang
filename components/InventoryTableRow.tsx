@@ -13,32 +13,36 @@ type SupplierData = {
   name: string
 }
 
+type StorageData = {
+  id: string
+  name: string
+  type: string
+}
+
 type MaterialData = {
   id: string
   name: string
   unit: string
   pricePerUnit: number
   stock: number
-  eoqBiayaPesan: number
-  eoqBiayaSimpan: number
-  existingFreq?: number 
-  supplier?: {
-    id: string
-    name: string
-  } | null
+  category: string // [FIX] Wajib ada biar ga error di modal
+  storagePercentage: number 
+  storageId?: string | null
+  supplier?: { id: string; name: string } | null
+  storage?: { id: string; name: string } | null 
 }
 
 type InventoryTableRowProps = {
   item: MaterialData
   suppliers: SupplierData[]
+  storages: StorageData[] // Wajib ada untuk dropdown modal
   userRole: string 
 }
 
-export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableRowProps) {
+export function InventoryTableRow({ item, suppliers, storages, userRole }: InventoryTableRowProps) {
   const [showEditModal, setShowEditModal] = useState(false)
   const [key, setKey] = useState(0) 
 
-  // [PERUBAHAN DISINI] Hanya PURCHASING yang bisa edit
   const canEdit = userRole === "PURCHASING"
 
   const handleSuccess = () => {
@@ -79,9 +83,7 @@ export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableR
           <span className="text-xs text-slate-400">per {item.unit}</span> 
         </TableCell>
 
-       
-
-        {/* 6. Stok Fisik */}
+        {/* 4. Stok Fisik */}
         <TableCell className="text-right align-top py-4">
             <div className="flex items-baseline justify-end gap-1.5">
                 <span className="text-lg font-bold text-slate-900">
@@ -93,7 +95,7 @@ export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableR
             </div>
         </TableCell>
 
-        {/* 7. AKSI (Muncul untuk Purchasing Saja) */}
+        {/* 5. AKSI (Muncul untuk Purchasing Saja) */}
         {canEdit && (
           <TableCell className="text-center align-top py-4">
             <Button
@@ -116,6 +118,7 @@ export function InventoryTableRow({ item, suppliers, userRole }: InventoryTableR
           key={key}
           material={item}
           suppliers={suppliers}
+          storages={storages} 
           onClose={() => setShowEditModal(false)}
           onSuccess={handleSuccess}
           userRole={userRole} 
